@@ -14,6 +14,19 @@ test("a citation opens the highlighted page", async ({ page }) => {
   await expect(page.getByText("Grade 7 Ecosystems (sample)").first()).toBeVisible();
 });
 
+test("on a phone the source sheet takes focus and gives it back", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page, "faculty");
+  await page.goto("/chat/thread-ecosystems");
+  const cite = page.getByRole("button", { name: /Source 1/ });
+  await cite.click();
+  await expect(page.getByRole("button", { name: "Close sources" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Close sources" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(cite).toBeFocused();
+});
+
 test("a bad upload is rejected and a share stays pending", async ({ page }) => {
   await login(page, "faculty");
   await page.getByRole("link", { name: "Library" }).click();

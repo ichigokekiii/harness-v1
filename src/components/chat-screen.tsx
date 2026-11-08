@@ -3,7 +3,7 @@
 import { ArrowUp, At, CaretDown, Check, Copy, FileText, Plus, Warning, X } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { call } from "@/api/client";
 import { Shell } from "@/components/shell";
 import { LOCAL_MODEL } from "@/lib/model";
@@ -455,6 +455,23 @@ function AssistantTurn({
 }
 
 function SourceRail({ citation, onClose }: { citation: Citation; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const overlay = useSyncExternalStore(
+    (onStoreChange) => {
+      const media = window.matchMedia("(max-width: 1023px)");
+      media.addEventListener("change", onStoreChange);
+      return () => media.removeEventListener("change", onStoreChange);
+    },
+    () => window.matchMedia("(max-width: 1023px)").matches,
+    () => false,
+  );
+
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus();
+    return () => opener?.focus();
+  }, []);
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -468,11 +485,19 @@ function SourceRail({ citation, onClose }: { citation: Citation; onClose: () => 
       className="fixed inset-0 z-30 flex flex-col bg-panel lg:static lg:w-[440px] lg:shrink-0 lg:border-l lg:border-line"
       data-mp-def="source-rail"
       data-mp-id={`source-${citation.id}`}
+      role="dialog"
+      aria-modal={overlay || undefined}
       aria-label="Source"
+      onKeyDown={(event) => {
+        if (overlay && event.key === "Tab") {
+          event.preventDefault();
+          closeRef.current?.focus();
+        }
+      }}
     >
       <div className="flex h-[52px] shrink-0 items-center justify-between pl-5 pr-2">
         <h2 className="text-[15px] font-medium">Sources</h2>
-        <button className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Close sources" onClick={onClose}>
+        <button ref={closeRef} className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Close sources" onClick={onClose}>
           <X size={18} />
         </button>
       </div>
