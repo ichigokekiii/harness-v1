@@ -14,7 +14,13 @@ One handler module, `src/server/handlers.ts`, is the mock API. The browser calls
 
 ## Theme
 
-Light is the default. Dark is a class on `html`. Gold is a mark on the navy tool dock, not body text.
+Light is the default. Dark is a class on `html`.
+
+The palette is Cursor's, read from cursor.com on 2026-11-09. Light uses `#f7f7f4` canvas, `#f2f1ed` chrome, and `#26251e` ink. Dark uses `#1b1913` canvas, `#14120b` chrome, and `#edecec` ink. Primary buttons are ink, not navy. Citation yellow is the only accent, and it marks sources only. The text selection is not yellow, so yellow always means a source.
+
+The chat layout is ChatGPT's, read from chatgpt.com the same day. That means a 260px sidebar that holds the chat history, a centered heading on an empty chat, and a pill composer with a 26px radius. User turns are right-aligned bubbles and assistant turns have no box. The model name sits in the composer as muted text with a chevron, the way Cursor shows it.
+
+`node scripts/loop-shots.mjs` captures every role at 1440 and 390 in both themes into `docs/screens/loop/`, which git ignores. `node scripts/contrast.mjs` reads the tokens from `globals.css`, so it cannot drift from the real palette.
 
 ## Composition
 
