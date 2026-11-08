@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harness at Sample Academy. Dock composition.</title>
+  <style>
+    :root {
+      --navy: #002d62;
+      --gold: #fdcc01;
+      --canvas: #f7f7f5;
+      --dark: #141413;
+      --cite: #ffe512;
+      --cite-ink: #1a1a18;
+      --space: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-width: 1488px;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.45;
+      color: #1a1a18;
+      background: #7a7872;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button { cursor: pointer; }
+
+    a.skip {
+      position: absolute;
+      left: -999px;
+      top: 8px;
+      z-index: 20;
+      min-height: 44px;
+      padding: 10px 14px;
+      background: var(--navy);
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    a.skip:focus {
+      left: 16px;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--focus, var(--navy));
+      outline-offset: 2px;
+    }
+
+    .theme-light {
+      --bg: var(--canvas);
+      --ink: #1a1a18;
+      --muted: #5c5a52;
+      --line: #e6e4de;
+      --panel: #ffffff;
+      --field: #ffffff;
+      --focus: var(--navy);
+      --rail-idle: #d7e0ec;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    .theme-dark {
+      --bg: var(--dark);
+      --ink: #f7f7f5;
+      --muted: #c4c2ba;
+      --line: #2c2c2a;
+      --panel: #1c1c1a;
+      --field: #1c1c1a;
+      --focus: #f7f7f5;
+      --rail-idle: #d7e0ec;
+      color: var(--ink);
+      background: var(--bg);
+      color-scheme: dark;
+    }
+
+    .theme-dark .rail :focus-visible,
+    .theme-light .rail :focus-visible {
+      outline-color: #ffffff;
+    }
+
+    .studio {
+      padding: 40px 24px 72px;
+    }
+
+    .studio-head {
+      width: 1440px;
+      margin: 0 auto 28px;
+      color: var(--canvas);
+    }
+
+    .studio-head h1 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    .studio-head p {
+      margin: 0;
+      color: #eceae3;
+      font-size: 14px;
+    }
+
+    .board {
+      width: 1440px;
+      margin: 0 auto 64px;
+    }
+
+    .board-label {
+      margin: 0 0 12px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--canvas);
+    }
+
+    .screen-label {
+      margin: 28px 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #eceae3;
+    }
+
+    .screen-label:first-of-type { margin-top: 0; }
+
+    .app {
+      width: 1440px;
+      height: 900px;
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      overflow: hidden;
+      background: var(--bg);
+      outline: 1px solid rgba(0, 0, 0, 0.28);
+    }
+
+    .rail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 0;
+      background: var(--navy);
+      color: var(--rail-idle);
+    }
+
+    .mark,
+    .rail-btn {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      text-decoration: none;
+      flex: 0 0 44px;
+    }
+
+    .mark {
+      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      color: #ffffff;
+    }
+
+    .rail-btn svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+
+    .rail-btn:hover { color: #ffffff; }
+
+    .rail-btn.is-active {
+      color: var(--gold);
+    }
+
+    .rail-btn.is-active:hover { color: var(--gold); }
+
+    .rail-spacer { flex: 1; }
+
+    .work {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .login-work {
+      display: grid;
+      grid-template-columns: 400px minmax(0, 1fr);
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+      padding: 32px 28px;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+
+    .login-form h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+    }
+
+    .login-form .lede {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .roles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .role {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      color: var(--ink);
+    }
+
+    .role.is-on {
+      background: var(--navy);
+      color: #ffffff;
+      border-color: var(--navy);
+    }
+
+    label.field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    label.field span { color: var(--ink); }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      min-height: 44px;
+      width: 100%;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      color: var(--ink);
+      font-size: 16px;
+    }
+
+    .btn {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0 16px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 600;
+    }
+
+    .btn-navy {
+      background: var(--navy);
+      color: #ffffff;
+      border-color: var(--navy);
+    }
+
+    .btn-navy:hover { background: #00356f; }
+
+    .btn-navy:active { background: #001f45; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .btn-ghost:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+    .login-aside {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 36px;
+      background: var(--bg);
+    }
+
+    .login-aside h3 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 650;
+      letter-spacing: -0.04em;
+    }
+
+    .login-aside p {
+      margin: 0 0 20px;
+      max-width: 36ch;
+      color: var(--muted);
+    }
+
+    .dock-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
+      max-width: 420px;
+    }
+
+    .dock-list li {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .dock-list .meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .chat-work {
+      display: grid;
+      grid-template-rows: 56px minmax(0, 1fr) auto;
+    }
+
+    .thread-bar,
+    .tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 0 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .thread-bar h2,
+    .tools h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .thread-bar .meta,
+    .tools .meta {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .log {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      overflow: auto;
+      background: var(--bg);
+    }
+
+    .msg {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .msg .who {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 650;
+      color: var(--muted);
+    }
+
+    .msg p { margin: 0 0 12px; max-width: none; }
+
+    .msg p:last-child { margin-bottom: 0; }
+
+    .cite-band {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: var(--cite);
+      color: var(--cite-ink);
+      border-radius: 4px;
+    }
+
+    .cite-band p { margin: 0 0 6px; }
+
+    .cite-band .src {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .tray {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 64px;
+      padding: 10px 16px;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+    }
+
+    .tray .stat {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tray label {
+      display: block;
+      min-width: 0;
+    }
+
+    .tray label span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .space-work {
+      display: grid;
+      grid-template-rows: 56px minmax(0, 1fr);
+    }
+
+    .tool {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .tool svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    .tool:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+    .tool.is-on {
+      background: var(--navy);
+      color: #ffffff;
+    }
+
+    .space-body {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr) 280px;
+      min-height: 0;
+    }
+
+    .layers,
+    .inspector {
+      min-height: 0;
+      overflow: auto;
+      background: var(--panel);
+      padding: 12px;
+    }
+
+    .layers { border-right: 1px solid var(--line); }
+
+    .inspector { border-left: 1px solid var(--line); }
+
+    .pane-title {
+      margin: 4px 8px 10px;
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .layer {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+    }
+
+    .layer:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+    .layer.is-on {
+      background: color-mix(in srgb, var(--navy) 12%, var(--panel));
+      box-shadow: inset 3px 0 0 var(--navy);
+    }
+
+    .layer .kind {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .canvas {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background: var(--canvas);
+      color: #1a1a18;
+    }
+
+    .slide {
+      width: min(720px, 100%);
+      min-height: 420px;
+      padding: 28px;
+      background: #ffffff;
+      border: 1px solid #e6e4de;
+    }
+
+    .slide h3 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .slide p {
+      margin: 0 0 24px;
+      color: #5c5a52;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .node {
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 12px;
+      border: 1px solid var(--navy);
+      background: var(--canvas);
+    }
+
+    .node strong { font-size: 14px; }
+
+    .node span {
+      color: #5c5a52;
+      font-size: 12px;
+    }
+
+    .inspector .field { margin-bottom: 12px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#light-login">Skip to artboards</a>
+
+  <div class="studio">
+    <header class="studio-head">
+      <h1>Harness at Sample Academy</h1>
+      <p>Dock composition. 56px icon rail. Transcript takes the remaining width. Space tools stay in the top bar.</p>
+    </header>
+
+    <section class="board" aria-label="Light artboard 1440">
+      <p class="board-label">Light 1440</p>
+
+      <p class="screen-label">Login</p>
+      <div class="app theme-light" id="light-login">
+        <nav class="rail" aria-label="Faculty">
+          <a class="mark" href="#light-login" aria-label="Harness home">H</a>
+          <button class="rail-btn" type="button" aria-label="Chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v11H8.4L4 19.2V5zm2 2v9.1l1.6-1.1H18V7H6z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zm2 2v12.3c.3-.2.7-.3 1.1-.3H16V6H8z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Space">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h10v10H4V6zm6 4h10v10H10V10z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Forms">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v16H7V4zm2 3v2h6V7H9zm0 4v2h6v-2H9zm0 4v2h4v-2H9z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Eval">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 18h3V10H5v8zm5.5 0h3V6h-3v12zM16 18h3V13h-3v5z"/></svg>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="rail-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h6v2h-6v2h-4V8H4V6h6V4zm-6 8h6v2H4v-2zm10 0h6v2h-6v-2zM8 16h8v2H8v-2z"/></svg>
+          </button>
+        </nav>
+        <div class="work login-work">
+          <form class="login-form" action="#" method="post" onsubmit="return false">
+            <h2>Sign in</h2>
+            <p class="lede">Faculty workspace at Sample Academy.</p>
+            <div class="roles" role="group" aria-label="Role">
+              <button class="role is-on" type="button" aria-pressed="true">Faculty</button>
+              <button class="role" type="button" aria-pressed="false">Admin</button>
+            </div>
+            <label class="field" for="email-light">
+              <span>Email</span>
+              <input id="email-light" name="email" type="email" autocomplete="username" value="mira.santos@sample.academy">
+            </label>
+            <label class="field" for="password-light">
+              <span>Password</span>
+              <input id="password-light" name="password" type="password" autocomplete="current-password">
+            </label>
+            <button class="btn btn-navy" type="button">Log in</button>
+            <button class="btn btn-ghost" type="button">Continue with Google</button>
+          </form>
+          <aside class="login-aside">
+            <h3>Sample Academy</h3>
+            <p>Admitted sources stay on campus. Chat finds them. Space turns them into a lesson board.</p>
+            <ul class="dock-list">
+              <li><span>Grade 7 ecosystems coverage</span><span class="meta">Chat</span></li>
+              <li><span>Ecosystems: connections and change</span><span class="meta">Space</span></li>
+              <li><span>Grade 7 Ecosystems (sample)</span><span class="meta">Library</span></li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+
+      <p class="screen-label">Chat thread</p>
+      <div class="app theme-light" id="light-chat">
+        <nav class="rail" aria-label="Faculty">
+          <a class="mark" href="#light-login" aria-label="Harness home">H</a>
+          <button class="rail-btn is-active" type="button" aria-label="Chat" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v11H8.4L4 19.2V5zm2 2v9.1l1.6-1.1H18V7H6z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zm2 2v12.3c.3-.2.7-.3 1.1-.3H16V6H8z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Space">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h10v10H4V6zm6 4h10v10H10V10z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Forms">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v16H7V4zm2 3v2h6V7H9zm0 4v2h6v-2H9zm0 4v2h4v-2H9z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Eval">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 18h3V10H5v8zm5.5 0h3V6h-3v12zM16 18h3V13h-3v5z"/></svg>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="rail-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h6v2h-6v2h-4V8H4V6h6V4zm-6 8h6v2H4v-2zm10 0h6v2h-6v-2zM8 16h8v2H8v-2z"/></svg>
+          </button>
+        </nav>
+        <div class="work chat-work">
+          <header class="thread-bar">
+            <h2>Grade 7 ecosystems coverage</h2>
+            <p class="meta">Mira Santos, Science</p>
+          </header>
+          <ol class="log" aria-label="Thread">
+            <li class="msg">
+              <p class="who">Mira Santos</p>
+              <p>What does a food web show in the Grade 7 ecosystems unit?</p>
+            </li>
+            <li class="msg">
+              <p class="who">Harness</p>
+              <p>A food web is the map of how energy moves through an ecosystem. Pair it with the biotic and abiotic interactions in the Grade 7 Science Curriculum Guide, pages 32 to 34.</p>
+              <aside class="cite-band">
+                <p>Grade 7 Ecosystems (sample) says a food web shows how energy moves.</p>
+                <p class="src">Grade 7 Ecosystems (sample), page 7. Current.</p>
+              </aside>
+            </li>
+          </ol>
+          <footer class="tray">
+            <div class="stat">9B Heretic</div>
+            <div class="stat">2 sources</div>
+            <label>
+              <span>Ask from admitted sources</span>
+              <input id="ask-light" type="text" placeholder="Ask from admitted sources">
+            </label>
+            <button class="btn btn-navy" type="button">Send</button>
+          </footer>
+        </div>
+      </div>
+
+      <p class="screen-label">Space</p>
+      <div class="app theme-light" id="light-space">
+        <nav class="rail" aria-label="Faculty">
+          <a class="mark" href="#light-login" aria-label="Harness home">H</a>
+          <button class="rail-btn" type="button" aria-label="Chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v11H8.4L4 19.2V5zm2 2v9.1l1.6-1.1H18V7H6z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zm2 2v12.3c.3-.2.7-.3 1.1-.3H16V6H8z"/></svg>
+          </button>
+          <button class="rail-btn is-active" type="button" aria-label="Space" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h10v10H4V6zm6 4h10v10H10V10z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Forms">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v16H7V4zm2 3v2h6V7H9zm0 4v2h6v-2H9zm0 4v2h4v-2H9z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Eval">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 18h3V10H5v8zm5.5 0h3V6h-3v12zM16 18h3V13h-3v5z"/></svg>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="rail-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h6v2h-6v2h-4V8H4V6h6V4zm-6 8h6v2H4v-2zm10 0h6v2h-6v-2zM8 16h8v2H8v-2z"/></svg>
+          </button>
+        </nav>
+        <div class="work space-work">
+          <header class="tools">
+            <button class="tool is-on" type="button" aria-label="Select" aria-pressed="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3l10 9h-5.2L14 21l-2.4.8L8.3 13.2 6 15.2V3z"/></svg>
+            </button>
+            <button class="tool" type="button" aria-label="Frame" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3h2v4h6V3h2v4h4v2h-4v6h4v2h-4v4h-2v-4H9v4H7v-4H3v-2h4V9H3V7h4V3zm2 6v6h6V9H9z"/></svg>
+            </button>
+            <button class="tool" type="button" aria-label="Text" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5h14v3h-5v11h-4V8H5V5z"/></svg>
+            </button>
+            <button class="tool" type="button" aria-label="Comment" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v10H8l-4 4V5zm3 3v2h10V8H7z"/></svg>
+            </button>
+            <h2>Ecosystems: connections and change</h2>
+            <p class="meta">Grade 7 Science</p>
+          </header>
+          <div class="space-body">
+            <section class="layers" aria-label="Layers">
+              <p class="pane-title">Layers</p>
+              <button class="layer" type="button"><span>Overview</span><span class="kind">Frame</span></button>
+              <button class="layer" type="button"><span>Objectives</span><span class="kind">Frame</span></button>
+              <button class="layer is-on" type="button" aria-current="true"><span>Food web</span><span class="kind">Frame</span></button>
+              <button class="layer" type="button"><span>Exit ticket</span><span class="kind">Frame</span></button>
+            </section>
+            <section class="canvas" aria-label="Canvas">
+              <article class="slide">
+                <h3>Food web</h3>
+                <p>Energy moves from the sun through producers to consumers.</p>
+                <div class="flow">
+                  <div class="node"><strong>Sun</strong><span>Source</span></div>
+                  <div class="node"><strong>Grass</strong><span>Producer</span></div>
+                  <div class="node"><strong>Insect</strong><span>Consumer</span></div>
+                  <div class="node"><strong>Bird</strong><span>Consumer</span></div>
+                </div>
+              </article>
+            </section>
+            <section class="inspector" aria-label="Inspector">
+              <p class="pane-title">Inspector</p>
+              <label class="field" for="layer-light">
+                <span>Layer</span>
+                <input id="layer-light" type="text" value="Food web" readonly>
+              </label>
+              <label class="field" for="kind-light">
+                <span>Kind</span>
+                <input id="kind-light" type="text" value="frame" readonly>
+              </label>
+              <label class="field" for="fill-light">
+                <span>Fill</span>
+                <input id="fill-light" type="text" value="#f7f7f5" readonly>
+              </label>
+              <label class="field" for="source-light">
+                <span>Source</span>
+                <input id="source-light" type="text" value="Grade 7 Ecosystems (sample)" readonly>
+              </label>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board" aria-label="Dark artboard 1440">
+      <p class="board-label">Dark 1440</p>
+
+      <p class="screen-label">Login</p>
+      <div class="app theme-dark" id="dark-login">
+        <nav class="rail" aria-label="Faculty">
+          <a class="mark" href="#dark-login" aria-label="Harness home">H</a>
+          <button class="rail-btn" type="button" aria-label="Chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v11H8.4L4 19.2V5zm2 2v9.1l1.6-1.1H18V7H6z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zm2 2v12.3c.3-.2.7-.3 1.1-.3H16V6H8z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Space">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h10v10H4V6zm6 4h10v10H10V10z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Forms">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v16H7V4zm2 3v2h6V7H9zm0 4v2h6v-2H9zm0 4v2h4v-2H9z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Eval">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 18h3V10H5v8zm5.5 0h3V6h-3v12zM16 18h3V13h-3v5z"/></svg>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="rail-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h6v2h-6v2h-4V8H4V6h6V4zm-6 8h6v2H4v-2zm10 0h6v2h-6v-2zM8 16h8v2H8v-2z"/></svg>
+          </button>
+        </nav>
+        <div class="work login-work">
+          <form class="login-form" action="#" method="post" onsubmit="return false">
+            <h2>Sign in</h2>
+            <p class="lede">Faculty workspace at Sample Academy.</p>
+            <div class="roles" role="group" aria-label="Role">
+              <button class="role is-on" type="button" aria-pressed="true">Faculty</button>
+              <button class="role" type="button" aria-pressed="false">Admin</button>
+            </div>
+            <label class="field" for="email-dark">
+              <span>Email</span>
+              <input id="email-dark" name="email" type="email" autocomplete="username" value="mira.santos@sample.academy">
+            </label>
+            <label class="field" for="password-dark">
+              <span>Password</span>
+              <input id="password-dark" name="password" type="password" autocomplete="current-password">
+            </label>
+            <button class="btn btn-navy" type="button">Log in</button>
+            <button class="btn btn-ghost" type="button">Continue with Google</button>
+          </form>
+          <aside class="login-aside">
+            <h3>Sample Academy</h3>
+            <p>Admitted sources stay on campus. Chat finds them. Space turns them into a lesson board.</p>
+            <ul class="dock-list">
+              <li><span>Grade 7 ecosystems coverage</span><span class="meta">Chat</span></li>
+              <li><span>Ecosystems: connections and change</span><span class="meta">Space</span></li>
+              <li><span>Grade 7 Ecosystems (sample)</span><span class="meta">Library</span></li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+
+      <p class="screen-label">Chat thread</p>
+      <div class="app theme-dark" id="dark-chat">
+        <nav class="rail" aria-label="Faculty">
+          <a class="mark" href="#dark-login" aria-label="Harness home">H</a>
+          <button class="rail-btn is-active" type="button" aria-label="Chat" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v11H8.4L4 19.2V5zm2 2v9.1l1.6-1.1H18V7H6z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zm2 2v12.3c.3-.2.7-.3 1.1-.3H16V6H8z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Space">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h10v10H4V6zm6 4h10v10H10V10z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Forms">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v16H7V4zm2 3v2h6V7H9zm0 4v2h6v-2H9zm0 4v2h4v-2H9z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Eval">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 18h3V10H5v8zm5.5 0h3V6h-3v12zM16 18h3V13h-3v5z"/></svg>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="rail-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h6v2h-6v2h-4V8H4V6h6V4zm-6 8h6v2H4v-2zm10 0h6v2h-6v-2zM8 16h8v2H8v-2z"/></svg>
+          </button>
+        </nav>
+        <div class="work chat-work">
+          <header class="thread-bar">
+            <h2>Grade 7 ecosystems coverage</h2>
+            <p class="meta">Mira Santos, Science</p>
+          </header>
+          <ol class="log" aria-label="Thread">
+            <li class="msg">
+              <p class="who">Mira Santos</p>
+              <p>What does a food web show in the Grade 7 ecosystems unit?</p>
+            </li>
+            <li class="msg">
+              <p class="who">Harness</p>
+              <p>A food web is the map of how energy moves through an ecosystem. Pair it with the biotic and abiotic interactions in the Grade 7 Science Curriculum Guide, pages 32 to 34.</p>
+              <aside class="cite-band">
+                <p>Grade 7 Ecosystems (sample) says a food web shows how energy moves.</p>
+                <p class="src">Grade 7 Ecosystems (sample), page 7. Current.</p>
+              </aside>
+            </li>
+          </ol>
+          <footer class="tray">
+            <div class="stat">9B Heretic</div>
+            <div class="stat">2 sources</div>
+            <label>
+              <span>Ask from admitted sources</span>
+              <input id="ask-dark" type="text" placeholder="Ask from admitted sources">
+            </label>
+            <button class="btn btn-navy" type="button">Send</button>
+          </footer>
+        </div>
+      </div>
+
+      <p class="screen-label">Space</p>
+      <div class="app theme-dark" id="dark-space">
+        <nav class="rail" aria-label="Faculty">
+          <a class="mark" href="#dark-login" aria-label="Harness home">H</a>
+          <button class="rail-btn" type="button" aria-label="Chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v11H8.4L4 19.2V5zm2 2v9.1l1.6-1.1H18V7H6z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4zm2 2v12.3c.3-.2.7-.3 1.1-.3H16V6H8z"/></svg>
+          </button>
+          <button class="rail-btn is-active" type="button" aria-label="Space" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h10v10H4V6zm6 4h10v10H10V10z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Forms">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h10v16H7V4zm2 3v2h6V7H9zm0 4v2h6v-2H9zm0 4v2h4v-2H9z"/></svg>
+          </button>
+          <button class="rail-btn" type="button" aria-label="Eval">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 18h3V10H5v8zm5.5 0h3V6h-3v12zM16 18h3V13h-3v5z"/></svg>
+          </button>
+          <span class="rail-spacer"></span>
+          <button class="rail-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h6v2h-6v2h-4V8H4V6h6V4zm-6 8h6v2H4v-2zm10 0h6v2h-6v-2zM8 16h8v2H8v-2z"/></svg>
+          </button>
+        </nav>
+        <div class="work space-work">
+          <header class="tools">
+            <button class="tool is-on" type="button" aria-label="Select" aria-pressed="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3l10 9h-5.2L14 21l-2.4.8L8.3 13.2 6 15.2V3z"/></svg>
+            </button>
+            <button class="tool" type="button" aria-label="Frame" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3h2v4h6V3h2v4h4v2h-4v6h4v2h-4v4h-2v-4H9v4H7v-4H3v-2h4V9H3V7h4V3zm2 6v6h6V9H9z"/></svg>
+            </button>
+            <button class="tool" type="button" aria-label="Text" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5h14v3h-5v11h-4V8H5V5z"/></svg>
+            </button>
+            <button class="tool" type="button" aria-label="Comment" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v10H8l-4 4V5zm3 3v2h10V8H7z"/></svg>
+            </button>
+            <h2>Ecosystems: connections and change</h2>
+            <p class="meta">Grade 7 Science</p>
+          </header>
+          <div class="space-body">
+            <section class="layers" aria-label="Layers">
+              <p class="pane-title">Layers</p>
+              <button class="layer" type="button"><span>Overview</span><span class="kind">Frame</span></button>
+              <button class="layer" type="button"><span>Objectives</span><span class="kind">Frame</span></button>
+              <button class="layer is-on" type="button" aria-current="true"><span>Food web</span><span class="kind">Frame</span></button>
+              <button class="layer" type="button"><span>Exit ticket</span><span class="kind">Frame</span></button>
+            </section>
+            <section class="canvas" aria-label="Canvas">
+              <article class="slide">
+                <h3>Food web</h3>
+                <p>Energy moves from the sun through producers to consumers.</p>
+                <div class="flow">
+                  <div class="node"><strong>Sun</strong><span>Source</span></div>
+                  <div class="node"><strong>Grass</strong><span>Producer</span></div>
+                  <div class="node"><strong>Insect</strong><span>Consumer</span></div>
+                  <div class="node"><strong>Bird</strong><span>Consumer</span></div>
+                </div>
+              </article>
+            </section>
+            <section class="inspector" aria-label="Inspector">
+              <p class="pane-title">Inspector</p>
+              <label class="field" for="layer-dark">
+                <span>Layer</span>
+                <input id="layer-dark" type="text" value="Food web" readonly>
+              </label>
+              <label class="field" for="kind-dark">
+                <span>Kind</span>
+                <input id="kind-dark" type="text" value="frame" readonly>
+              </label>
+              <label class="field" for="fill-dark">
+                <span>Fill</span>
+                <input id="fill-dark" type="text" value="#f7f7f5" readonly>
+              </label>
+              <label class="field" for="source-dark">
+                <span>Source</span>
+                <input id="source-dark" type="text" value="Grade 7 Ecosystems (sample)" readonly>
+              </label>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

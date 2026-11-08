@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Harness, Sample Academy</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: #c9c9c2;
+  color: #1a1a18;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+::selection { background: #002d62; color: #f7f7f5; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+input { caret-color: #002d62; }
+:focus, :focus-visible, .is-focused {
+  outline: 2px solid #002d62;
+  outline-offset: 2px;
+}
+.artboard-dark :focus,
+.artboard-dark :focus-visible,
+.artboard-dark .is-focused { outline-color: #eceae4; }
+
+.page { width: 1440px; margin: 48px auto; }
+
+.artboard {
+  width: 1440px;
+  background: #e8e8e2;
+  color: #1a1a18;
+  --navy: #002d62;
+  --canvas: #f7f7f5;
+  --ink: #1a1a18;
+  --muted: #5c5c56;
+  --panel: #f3f3ef;
+  --paper: #ffffff;
+  --line: #d8d8d2;
+  --user: #eceae4;
+  --rest: #efefe9;
+}
+.artboard-dark {
+  background: #141413;
+  color: #eceae4;
+  --canvas: #141413;
+  --ink: #eceae4;
+  --muted: #a8a69e;
+  --panel: #1a1a18;
+  --paper: #1c1c1a;
+  --line: #2e2e2a;
+  --user: #242422;
+  --rest: #191917;
+  -webkit-font-smoothing: antialiased;
+}
+.artboard-dark ::selection { background: #eceae4; color: #141413; }
+.artboard-dark input { caret-color: #eceae4; }
+.artboard + .artboard { margin-top: 56px; }
+
+.board-title {
+  margin: 0;
+  padding: 20px 20px 4px;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.block h3 {
+  margin: 28px 20px 10px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.block:first-of-type h3 { margin-top: 8px; }
+
+.app {
+  width: 1440px;
+  height: 900px;
+  display: flex;
+  background: var(--canvas);
+  color: var(--ink);
+  overflow: hidden;
+  box-shadow: 0 1px 0 var(--line);
+}
+.spine {
+  width: 248px;
+  flex: 0 0 248px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.read {
+  width: 720px;
+  flex: 0 0 720px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--canvas);
+}
+.read.grow { flex: 1 1 auto; width: auto; }
+.gutter {
+  flex: 1 1 auto;
+  background: var(--rest);
+  border-left: 1px solid var(--line);
+}
+.inspect {
+  width: 280px;
+  flex: 0 0 280px;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.board {
+  flex: 1 1 auto;
+  position: relative;
+  min-width: 0;
+  background-color: #f7f7f5;
+  background-image: radial-gradient(#c8c8c2 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.mark {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  color: var(--navy);
+}
+.app-login .mark { color: #f7f7f5; }
+.brand-name {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.brand-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.app-login .spine {
+  background: var(--navy);
+  border-right: 0;
+  color: #f7f7f5;
+}
+.app-login .brand { border-bottom-color: rgba(247,247,245,0.16); }
+.app-login .brand-name { color: #f7f7f5; }
+.app-login .brand-sub { color: #c5d4ea; }
+.login-note {
+  margin: 16px 14px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #c5d4ea;
+}
+
+.pad { padding: 12px; }
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8c8c2 transparent;
+}
+.artboard-dark .scroll { scrollbar-color: #3a3a36 transparent; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+}
+.btn-primary {
+  background: var(--navy);
+  color: #f7f7f5;
+  width: 100%;
+  font-weight: 600;
+}
+.btn-primary:hover { background: #003a7a; }
+.btn-primary:active { background: #00244e; }
+.btn-ghost:hover { background: rgba(26,26,24,0.06); }
+.artboard-dark .btn-ghost:hover { background: rgba(236,234,228,0.08); }
+.btn-icon { width: 44px; padding: 0; border-radius: 10px; color: var(--muted); }
+.btn-new {
+  width: 100%;
+  background: var(--navy);
+  color: #f7f7f5;
+  font-weight: 600;
+}
+.btn-new:hover { background: #003a7a; }
+.btn svg, .ico { width: 18px; height: 18px; display: block; }
+
+.group {
+  margin: 16px 4px 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+}
+.thread {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font-weight: 500;
+}
+.thread:hover { background: rgba(26,26,24,0.06); }
+.artboard-dark .thread:hover { background: rgba(236,234,228,0.08); }
+.thread.is-on {
+  background: rgba(0,45,98,0.10);
+  font-weight: 650;
+  color: var(--navy);
+}
+.artboard-dark .thread.is-on {
+  background: rgba(247,247,245,0.08);
+  color: #eceae4;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+}
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #f7f7f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.who small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+
+.form-col {
+  width: 400px;
+  margin: auto 0 auto 72px;
+}
+.form-col h2 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.lede {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field {
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 16px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.field::placeholder { color: var(--muted); opacity: 1; }
+.hint { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+
+.chat-head,
+.agent-head,
+.insp-head {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.msgs {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 28px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #c8c8c2 transparent;
+}
+.msg { max-width: 100%; }
+.msg p { margin: 0 0 12px; }
+.msg.user {
+  margin: 0 0 20px auto;
+  max-width: 78%;
+  padding: 12px 14px;
+  background: var(--user);
+  border-radius: 12px;
+}
+.cite {
+  display: block;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: #ffe512;
+  color: #000033;
+  font-weight: 600;
+  border-radius: 2px;
+}
+.compose-wrap { padding: 12px 16px 16px; }
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+.composer input {
+  flex: 1 1 auto;
+  min-height: 44px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0 8px;
+  color: var(--ink);
+}
+.composer input:focus { outline: none; }
+.composer.is-focused {
+  outline: 2px solid #002d62;
+  outline-offset: 2px;
+}
+.artboard-dark .composer.is-focused { outline-color: #eceae4; }
+.model {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.model:hover { background: rgba(26,26,24,0.06); }
+.artboard-dark .model:hover { background: rgba(236,234,228,0.08); }
+.chev { width: 12px; height: 12px; }
+.send {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #f7f7f5;
+}
+.send:hover { background: #003a7a; }
+.send svg { width: 18px; height: 18px; }
+
+.bubble {
+  margin: 12px;
+  padding: 12px;
+  background: var(--user);
+  border-radius: 12px;
+}
+.bubble.me {
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 12px 4px;
+}
+.agent-compose { padding: 12px; margin-top: auto; }
+
+.frame {
+  position: absolute;
+  width: 400px;
+  height: 225px;
+  background: #ffffff;
+  color: #1a1a18;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(26,26,24,0.10);
+  overflow: hidden;
+}
+.frame.is-sel {
+  box-shadow: 0 8px 24px rgba(26,26,24,0.14);
+  outline: 2px solid #002d62;
+  outline-offset: 0;
+}
+.frame-bar {
+  min-height: 28px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5c5c56;
+  background: #f7f7f5;
+  border-bottom: 1px solid #e4e4de;
+}
+.slide { padding: 22px 24px 16px; }
+.slide h4 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  font-weight: 650;
+  line-height: 1.15;
+  color: #1a1a18;
+}
+.slide .rule {
+  width: 40px;
+  height: 2px;
+  background: #002d62;
+  margin: 0 0 10px;
+}
+.slide p { margin: 0; font-size: 12px; color: #5c5c56; line-height: 1.4; }
+.web {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.node {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 4px;
+  border: 1px solid #d8d8d2;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 650;
+  color: #1a1a18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f5;
+}
+.arrow {
+  color: #002d62;
+  font-size: 12px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.dock {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 60px;
+  padding: 8px;
+  background: #002d62;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,20,48,0.28);
+}
+.tool {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #f7f7f5;
+}
+.tool:hover { background: rgba(247,247,245,0.12); }
+.tool.is-active {
+  background: #fdcc01;
+  color: #002d62;
+}
+.tool.is-active:hover { background: #fdcc01; }
+.tool svg { width: 18px; height: 18px; margin: 0 auto; }
+
+.insp-body { padding: 14px; }
+.insp-body .label { margin-top: 10px; }
+.insp-body .label:first-child { margin-top: 0; }
+.meta { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+
+.ico-plus { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.ico-send { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<section class="artboard artboard-light" aria-label="Light">
+  <h1 class="board-title">Light</h1>
+
+  <article class="block">
+    <h3>Login</h3>
+    <div class="app app-login">
+      <aside class="spine">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="15.5" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="5" y="10" width="14" height="4" rx="1" fill="currentColor"/></svg>
+          <div>
+            <span class="brand-name">Harness</span>
+            <span class="brand-sub">Sample Academy</span>
+          </div>
+        </div>
+        <p class="login-note">Faculty sign in. School files stay on campus until you send a prompt.</p>
+      </aside>
+      <div class="read grow">
+        <form class="form-col" action="#" method="post">
+          <h2>Faculty sign in</h2>
+          <p class="lede">Use the account Sample Academy issued.</p>
+          <label class="label" for="email-light">Work email</label>
+          <input class="field is-focused" id="email-light" type="email" name="email" value="msantos@sample.academy" autocomplete="username">
+          <label class="label" for="pass-light">Password</label>
+          <input class="field" id="pass-light" type="password" name="password" autocomplete="current-password">
+          <button class="btn btn-primary" type="submit">Sign in</button>
+          <p class="hint">SSO is off in this sample.</p>
+        </form>
+      </div>
+    </div>
+  </article>
+
+  <article class="block">
+    <h3>Chat thread</h3>
+    <div class="app">
+      <aside class="spine">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="15.5" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="5" y="10" width="14" height="4" rx="1" fill="currentColor"/></svg>
+          <div>
+            <span class="brand-name">Harness</span>
+            <span class="brand-sub">Sample Academy</span>
+          </div>
+        </div>
+        <div class="pad">
+          <button class="btn btn-new" type="button">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="ico-plus" d="M12 5v14M5 12h14"/></svg>
+            New thread
+          </button>
+        </div>
+        <div class="scroll">
+          <div class="group">Today</div>
+          <div class="pad" style="padding-top:0;">
+            <button class="thread is-on" type="button">Food webs, Grade 7</button>
+          </div>
+          <div class="group">Earlier</div>
+          <div class="pad" style="padding-top:0;">
+            <button class="thread" type="button">Lab safety memo</button>
+            <button class="thread" type="button">Week 4 quiz bank</button>
+          </div>
+        </div>
+        <div class="who">
+          <span class="avatar" aria-hidden="true">MS</span>
+          <div>M. Santos<small>Faculty</small></div>
+        </div>
+      </aside>
+      <section class="read" aria-label="Thread">
+        <header class="chat-head">Food webs, Grade 7</header>
+        <div class="msgs">
+          <div class="msg user">How does the Grade 7 unit show energy moving through a food web?</div>
+          <div class="msg">
+            <p>The unit treats energy as a path, not a pile of names.</p>
+            <blockquote class="cite">Grade 7 Ecosystems (sample) says a food web shows how energy moves.</blockquote>
+            <p>Start from the sun, then the producer, then each eater. Keep one path on the board so Grade 7 does not mix it with a food chain.</p>
+          </div>
+        </div>
+        <div class="compose-wrap">
+          <div class="composer is-focused">
+            <button class="btn btn-icon" type="button" aria-label="Add a file">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-plus" d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="btn btn-icon" type="button" aria-label="Mention a source">@</button>
+            <input type="text" aria-label="Message" placeholder="Ask the Grade 7 unit">
+            <button class="model" type="button" aria-label="Model 9B Heretic">
+              9B Heretic
+              <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="send" type="button" aria-label="Send">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-send" d="M12 19V5M6 11l6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+      <div class="gutter" aria-hidden="true"></div>
+    </div>
+  </article>
+
+  <article class="block">
+    <h3>Space canvas</h3>
+    <div class="app">
+      <aside class="spine" aria-label="Agent">
+        <div class="agent-head">Agent</div>
+        <div class="scroll">
+          <p class="bubble me">Two slides for the food web lesson.</p>
+          <div class="bubble">Frame 1 names the unit. Frame 2 is the energy path, arrows to the eater.</div>
+        </div>
+        <div class="agent-compose">
+          <div class="composer">
+            <button class="btn btn-icon" type="button" aria-label="Add a file">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-plus" d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <input type="text" aria-label="Ask the canvas" placeholder="Ask the canvas">
+            <button class="send" type="button" aria-label="Send">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-send" d="M12 19V5M6 11l6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+      <div class="board" aria-label="Canvas">
+        <div class="frame" style="left:48px;top:64px;">
+          <div class="frame-bar">Frame 1</div>
+          <div class="slide">
+            <h4>Energy in a food web</h4>
+            <div class="rule"></div>
+            <p>Grade 7 Ecosystems, Sample Academy</p>
+          </div>
+        </div>
+        <div class="frame is-sel" style="left:480px;top:168px;">
+          <div class="frame-bar">Frame 2</div>
+          <div class="slide">
+            <p style="margin-bottom:8px;font-weight:650;color:#1a1a18;font-size:12px;">Energy path</p>
+            <div class="web" aria-hidden="true">
+              <span class="node">Sun</span><span class="arrow">&rarr;</span>
+              <span class="node">Grass</span><span class="arrow">&rarr;</span>
+              <span class="node">Hopper</span><span class="arrow">&rarr;</span>
+              <span class="node">Frog</span><span class="arrow">&rarr;</span>
+              <span class="node">Hawk</span>
+            </div>
+            <p style="margin-top:10px;">Arrows point to the eater.</p>
+          </div>
+        </div>
+        <div class="dock" role="toolbar" aria-label="Canvas tools">
+          <button class="tool" type="button" aria-label="Select">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l6 16 2.2-6.2L19 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="tool is-active" type="button" aria-label="Frame" aria-current="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="6" width="14" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          </button>
+          <button class="tool" type="button" aria-label="Text">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7V6h12v1M12 6v12M9 18h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button class="tool" type="button" aria-label="Draw">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17.5L16.2 6.3a1.5 1.5 0 0 1 2.1 2.1L7.1 19.6H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <aside class="inspect" aria-label="Inspector">
+        <div class="insp-head">Inspector</div>
+        <div class="insp-body">
+          <p class="meta">Frame 2 selected</p>
+          <label class="label" for="title-light">Title</label>
+          <input class="field" id="title-light" type="text" value="Energy path">
+          <label class="label" for="size-light">Size</label>
+          <input class="field" id="size-light" type="text" value="960 x 540" readonly>
+          <label class="label" for="src-light">Source</label>
+          <input class="field" id="src-light" type="text" value="Grade 7 Ecosystems (sample)" readonly>
+        </div>
+      </aside>
+    </div>
+  </article>
+</section>
+
+<section class="artboard artboard-dark" aria-label="Dark">
+  <h2 class="board-title">Dark</h2>
+
+  <article class="block">
+    <h3>Login</h3>
+    <div class="app app-login">
+      <aside class="spine">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="15.5" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="5" y="10" width="14" height="4" rx="1" fill="currentColor"/></svg>
+          <div>
+            <span class="brand-name">Harness</span>
+            <span class="brand-sub">Sample Academy</span>
+          </div>
+        </div>
+        <p class="login-note">Faculty sign in. School files stay on campus until you send a prompt.</p>
+      </aside>
+      <div class="read grow">
+        <form class="form-col" action="#" method="post">
+          <h2>Faculty sign in</h2>
+          <p class="lede">Use the account Sample Academy issued.</p>
+          <label class="label" for="email-dark">Work email</label>
+          <input class="field" id="email-dark" type="email" name="email" value="msantos@sample.academy" autocomplete="username">
+          <label class="label" for="pass-dark">Password</label>
+          <input class="field" id="pass-dark" type="password" name="password" autocomplete="current-password">
+          <button class="btn btn-primary is-focused" type="submit">Sign in</button>
+          <p class="hint">SSO is off in this sample.</p>
+        </form>
+      </div>
+    </div>
+  </article>
+
+  <article class="block">
+    <h3>Chat thread</h3>
+    <div class="app">
+      <aside class="spine">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="15.5" y="3.5" width="5.5" height="17" rx="1.2" fill="currentColor"/><rect x="5" y="10" width="14" height="4" rx="1" fill="currentColor"/></svg>
+          <div>
+            <span class="brand-name">Harness</span>
+            <span class="brand-sub">Sample Academy</span>
+          </div>
+        </div>
+        <div class="pad">
+          <button class="btn btn-new" type="button">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="ico-plus" d="M12 5v14M5 12h14"/></svg>
+            New thread
+          </button>
+        </div>
+        <div class="scroll">
+          <div class="group">Today</div>
+          <div class="pad" style="padding-top:0;">
+            <button class="thread is-on" type="button">Food webs, Grade 7</button>
+          </div>
+          <div class="group">Earlier</div>
+          <div class="pad" style="padding-top:0;">
+            <button class="thread" type="button">Lab safety memo</button>
+            <button class="thread" type="button">Week 4 quiz bank</button>
+          </div>
+        </div>
+        <div class="who">
+          <span class="avatar" aria-hidden="true">MS</span>
+          <div>M. Santos<small>Faculty</small></div>
+        </div>
+      </aside>
+      <section class="read" aria-label="Thread">
+        <header class="chat-head">Food webs, Grade 7</header>
+        <div class="msgs">
+          <div class="msg user">How does the Grade 7 unit show energy moving through a food web?</div>
+          <div class="msg">
+            <p>The unit treats energy as a path, not a pile of names.</p>
+            <blockquote class="cite">Grade 7 Ecosystems (sample) says a food web shows how energy moves.</blockquote>
+            <p>Start from the sun, then the producer, then each eater. Keep one path on the board so Grade 7 does not mix it with a food chain.</p>
+          </div>
+        </div>
+        <div class="compose-wrap">
+          <div class="composer">
+            <button class="btn btn-icon" type="button" aria-label="Add a file">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-plus" d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="btn btn-icon" type="button" aria-label="Mention a source">@</button>
+            <input type="text" aria-label="Message" placeholder="Ask the Grade 7 unit">
+            <button class="model" type="button" aria-label="Model 9B Heretic">
+              9B Heretic
+              <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="send is-focused" type="button" aria-label="Send">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-send" d="M12 19V5M6 11l6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+      <div class="gutter" aria-hidden="true"></div>
+    </div>
+  </article>
+
+  <article class="block">
+    <h3>Space canvas</h3>
+    <div class="app">
+      <aside class="spine" aria-label="Agent">
+        <div class="agent-head">Agent</div>
+        <div class="scroll">
+          <p class="bubble me">Two slides for the food web lesson.</p>
+          <div class="bubble">Frame 1 names the unit. Frame 2 is the energy path, arrows to the eater.</div>
+        </div>
+        <div class="agent-compose">
+          <div class="composer">
+            <button class="btn btn-icon" type="button" aria-label="Add a file">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-plus" d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <input type="text" aria-label="Ask the canvas" placeholder="Ask the canvas">
+            <button class="send" type="button" aria-label="Send">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="ico-send" d="M12 19V5M6 11l6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+      <div class="board" aria-label="Canvas">
+        <div class="frame" style="left:48px;top:64px;">
+          <div class="frame-bar">Frame 1</div>
+          <div class="slide">
+            <h4>Energy in a food web</h4>
+            <div class="rule"></div>
+            <p>Grade 7 Ecosystems, Sample Academy</p>
+          </div>
+        </div>
+        <div class="frame is-sel" style="left:480px;top:168px;">
+          <div class="frame-bar">Frame 2</div>
+          <div class="slide">
+            <p style="margin-bottom:8px;font-weight:650;color:#1a1a18;font-size:12px;">Energy path</p>
+            <div class="web" aria-hidden="true">
+              <span class="node">Sun</span><span class="arrow">&rarr;</span>
+              <span class="node">Grass</span><span class="arrow">&rarr;</span>
+              <span class="node">Hopper</span><span class="arrow">&rarr;</span>
+              <span class="node">Frog</span><span class="arrow">&rarr;</span>
+              <span class="node">Hawk</span>
+            </div>
+            <p style="margin-top:10px;">Arrows point to the eater.</p>
+          </div>
+        </div>
+        <div class="dock" role="toolbar" aria-label="Canvas tools">
+          <button class="tool" type="button" aria-label="Select">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l6 16 2.2-6.2L19 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="tool is-active" type="button" aria-label="Frame" aria-current="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="6" width="14" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          </button>
+          <button class="tool" type="button" aria-label="Text">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7V6h12v1M12 6v12M9 18h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button class="tool" type="button" aria-label="Draw">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17.5L16.2 6.3a1.5 1.5 0 0 1 2.1 2.1L7.1 19.6H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <aside class="inspect" aria-label="Inspector">
+        <div class="insp-head">Inspector</div>
+        <div class="insp-body">
+          <p class="meta">Frame 2 selected</p>
+          <label class="label" for="title-dark">Title</label>
+          <input class="field" id="title-dark" type="text" value="Energy path">
+          <label class="label" for="size-dark">Size</label>
+          <input class="field" id="size-dark" type="text" value="960 x 540" readonly>
+          <label class="label" for="src-dark">Source</label>
+          <input class="field" id="src-dark" type="text" value="Grade 7 Ecosystems (sample)" readonly>
+        </div>
+      </aside>
+    </div>
+  </article>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harness at Sample Academy</title>
+  <style>
+    :root {
+      --navy: #002d62;
+      --gold: #fdcc01;
+      --cite: #ffe512;
+      --cite-ink: #000033;
+      --serif: "Iowan Old Style", Iowan, Palatino, "Palatino Linotype", "Times New Roman", Times, serif;
+      --sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: #7a766e;
+      color: #1a1916;
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+
+    :focus { outline: none; }
+    :focus-visible {
+      outline: 2px solid var(--focus, var(--navy));
+      outline-offset: 3px;
+    }
+
+    .study {
+      width: 1440px;
+      margin: 0 auto;
+      padding: 48px 0 24px;
+      color: #eceae4;
+    }
+    .study h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+    .study p {
+      margin: 8px 0 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: #d4cfc4;
+    }
+
+    .plate {
+      width: 1440px;
+      margin: 0 auto 72px;
+    }
+    .plate-name {
+      margin: 0 0 12px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #eceae4;
+    }
+    .shot-name {
+      margin: 28px 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #eceae4;
+    }
+    .shot-name:first-of-type { margin-top: 0; }
+
+    .shot {
+      width: 1440px;
+      height: 900px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.22);
+    }
+
+    .light {
+      --paper: #f3efe4;
+      --ink: #191816;
+      --mute: #5a564e;
+      --line: #d6d0c1;
+      --field: #fffdf8;
+      --canvas: #e7e1d2;
+      --sheet: #fffdf8;
+      --focus: #002d62;
+      --fill: #002d62;
+      --fill-ink: #fffdf8;
+    }
+    .dark {
+      --paper: #141413;
+      --ink: #eceae4;
+      --mute: #a8a49a;
+      --line: #2e2d2a;
+      --field: #1c1b19;
+      --canvas: #0e0e0d;
+      --sheet: #1c1b19;
+      --focus: #ffe512;
+      --fill: #eceae4;
+      --fill-ink: #141413;
+    }
+
+    .mast {
+      flex: 0 0 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: var(--navy);
+      color: #fffdf8;
+      box-shadow: inset 0 -2px 0 var(--gold);
+    }
+    .mast a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      text-decoration: none;
+      font-family: var(--serif);
+      font-size: 20px;
+      letter-spacing: 0.01em;
+    }
+    .mast a:focus-visible {
+      outline-color: #fffdf8;
+    }
+    .mast-school {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #d7e2ef;
+    }
+
+    /* Login: title page, one narrow column */
+    .login-body {
+      flex: 1;
+      padding: 128px 0 64px 176px;
+    }
+    .login-col { width: 360px; }
+    .wordmark {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 72px;
+      font-weight: 400;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .school {
+      margin: 16px 0 0;
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .login-rule {
+      width: 48px;
+      height: 1px;
+      margin: 32px 0;
+      background: var(--line);
+      border: 0;
+    }
+    .sign-label {
+      margin: 0 0 24px;
+      font-size: 15px;
+      color: var(--ink);
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 0 0 16px;
+    }
+    .field span {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--mute);
+    }
+    .field input {
+      width: 100%;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--field);
+      color: var(--ink);
+    }
+    .field input::placeholder { color: var(--mute); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0 16px;
+      border: 1px solid transparent;
+      border-radius: 0;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    .btn-fill {
+      width: 100%;
+      margin-top: 8px;
+      background: var(--fill);
+      color: var(--fill-ink);
+      border-color: var(--fill);
+    }
+    .btn-fill:hover { filter: brightness(1.08); }
+    .btn-line {
+      width: 100%;
+      margin-top: 8px;
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .btn-line:hover { border-color: var(--ink); }
+    .host-note {
+      margin: 28px 0 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--mute);
+    }
+
+    /* Chat: thin text index, wide reading column */
+    .chat-body {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    .index {
+      width: 208px;
+      flex: 0 0 208px;
+      padding: 28px 8px 24px 20px;
+      border-right: 1px solid var(--line);
+    }
+    .index h2 {
+      margin: 0 8px 16px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .index ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .index a {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 44px;
+      padding: 4px 12px;
+      text-decoration: none;
+      border-left: 2px solid transparent;
+    }
+    .index a:hover { background: transparent; color: var(--ink); }
+    .index a[aria-current="page"] {
+      border-left-color: var(--navy);
+      font-family: var(--serif);
+    }
+    .dark .index a[aria-current="page"] { border-left-color: #eceae4; }
+    .index strong {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .index em {
+      font-style: normal;
+      font-size: 11px;
+      color: var(--mute);
+    }
+
+    .reading {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .article {
+      flex: 1;
+      padding: 72px 120px 24px;
+      max-width: 920px;
+    }
+    .kicker {
+      margin: 0 0 20px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .ask {
+      margin: 0 0 28px;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1.4;
+      color: var(--mute);
+    }
+    .answer {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 21px;
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+    .cite {
+      color: var(--cite-ink);
+      background: var(--cite);
+      text-decoration: underline;
+      text-decoration-color: var(--cite);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 2px;
+      padding: 0 0.08em;
+    }
+    .cite:hover { filter: brightness(0.97); }
+    .source {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      margin-top: 20px;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: var(--mute);
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+    }
+    .source:hover { color: var(--ink); }
+
+    .composer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 0 120px;
+      max-width: 920px;
+      border-top: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .composer label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .composer input {
+      flex: 1;
+      height: 44px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: var(--ink);
+    }
+    .composer input::placeholder { color: var(--mute); }
+    .composer button {
+      height: 44px;
+      padding: 0 12px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+    .composer button:hover { text-decoration: underline; }
+
+    /* Space: canvas first, agent as a bottom sheet */
+    .space-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--canvas);
+      position: relative;
+    }
+    .space-title {
+      position: absolute;
+      top: 24px;
+      left: 48px;
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .frames {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      padding: 64px 80px 96px;
+    }
+    .frame {
+      width: 340px;
+      height: 191px;
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      background: var(--sheet);
+      color: var(--ink);
+      text-align: left;
+      position: relative;
+    }
+    .frame:hover { border-color: var(--ink); }
+    .frame[aria-pressed="true"] {
+      border-color: var(--navy);
+    }
+    .dark .frame[aria-pressed="true"] { border-color: #eceae4; }
+    .frame small {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin-bottom: 10px;
+    }
+    .frame strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+    .frame p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--mute);
+    }
+    .inspect {
+      position: absolute;
+      left: 0;
+      top: calc(100% + 10px);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .sheet {
+      flex: 0 0 72px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 0 28px;
+      background: var(--sheet);
+      border-top: 1px solid var(--line);
+    }
+    .sheet p {
+      margin: 0;
+      flex: 1;
+      font-family: var(--serif);
+      font-size: 15px;
+      color: var(--ink);
+    }
+    .sheet form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 420px;
+      flex: 0 0 420px;
+    }
+    .sheet input {
+      flex: 1;
+      height: 44px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+      padding: 0 4px;
+      color: var(--ink);
+    }
+    .sheet input::placeholder { color: var(--mute); }
+    .sheet button {
+      height: 44px;
+      padding: 0 8px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+    }
+    .sheet button:hover { text-decoration: underline; }
+
+    ::selection {
+      background: var(--cite);
+      color: var(--cite-ink);
+    }
+  </style>
+</head>
+<body>
+  <header class="study">
+    <h1>Harness at Sample Academy</h1>
+    <p>Editorial composition. Light and dark artboards at 1440.</p>
+  </header>
+
+  <section class="plate" aria-label="Light artboard">
+    <p class="plate-name">Light</p>
+
+    <p class="shot-name">Login</p>
+    <article class="shot light" aria-label="Login, light">
+      <header class="mast">
+        <a href="#light-login">Harness</a>
+        <span class="mast-school">Sample Academy</span>
+      </header>
+      <div class="login-body" id="light-login">
+        <div class="login-col">
+          <p class="wordmark">Harness</p>
+          <p class="school">Sample Academy</p>
+          <hr class="login-rule">
+          <p class="sign-label">Faculty sign in</p>
+          <form action="#" method="post" onsubmit="return false">
+            <label class="field">
+              <span>Email</span>
+              <input id="light-email" type="email" name="email" autocomplete="username" value="faculty@sample.academy">
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input id="light-password" type="password" name="password" autocomplete="current-password" value="password">
+            </label>
+            <button class="btn btn-fill" type="submit">Continue</button>
+            <button class="btn btn-line" type="button">Continue with Google</button>
+          </form>
+          <p class="host-note">School documents stay on the Sample Academy host.</p>
+        </div>
+      </div>
+    </article>
+
+    <p class="shot-name">Chat</p>
+    <article class="shot light" aria-label="Chat thread, light">
+      <header class="mast">
+        <a href="#light-chat">Harness</a>
+        <span class="mast-school">Sample Academy</span>
+      </header>
+      <div class="chat-body" id="light-chat">
+        <nav class="index" aria-label="Threads">
+          <h2>Threads</h2>
+          <ul>
+            <li>
+              <a href="#light-chat" aria-current="page">
+                <strong>Grade 7 Ecosystems</strong>
+                <em>9 Nov</em>
+              </a>
+            </li>
+            <li>
+              <a href="#light-chat">
+                <strong>Permission form</strong>
+                <em>7 Nov</em>
+              </a>
+            </li>
+            <li>
+              <a href="#light-chat">
+                <strong>Second quarter lab</strong>
+                <em>4 Nov</em>
+              </a>
+            </li>
+            <li>
+              <a href="#light-chat">
+                <strong>Department memo</strong>
+                <em>28 Oct</em>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="reading">
+          <div class="article">
+            <p class="kicker">Grade 7 Ecosystems</p>
+            <p class="ask">How does a food web move energy in the Grade 7 ecosystems unit?</p>
+            <p class="answer">
+              Grade 7 Ecosystems (sample) says
+              <a class="cite" href="#light-source">a food web shows how energy moves</a>
+              from producers through consumers in the living things unit. Arrows in the web point toward the organism that receives the energy.
+            </p>
+            <a class="source" id="light-source" href="#light-source">Grade 7 Science Curriculum Guide, page 32. Current.</a>
+          </div>
+          <form class="composer" action="#" onsubmit="return false">
+            <label for="light-ask">Ask about approved school documents</label>
+            <input id="light-ask" name="ask" type="text" placeholder="Ask about approved school documents">
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+    </article>
+
+    <p class="shot-name">Space</p>
+    <article class="shot light" aria-label="Space, light">
+      <header class="mast">
+        <a href="#light-space">Harness</a>
+        <span class="mast-school">Sample Academy</span>
+      </header>
+      <div class="space-body" id="light-space">
+        <h2 class="space-title">Ecosystems slide deck</h2>
+        <div class="frames">
+          <button class="frame" type="button" aria-pressed="false">
+            <small>01</small>
+            <strong>Grade 7 Ecosystems</strong>
+            <p>Living things and their environment.</p>
+          </button>
+          <button class="frame" type="button" aria-pressed="true">
+            <small>02</small>
+            <strong>Food web</strong>
+            <p>A food web shows how energy moves.</p>
+            <span class="inspect">Frame 2 · Food web · Grade 7 Ecosystems (sample)</span>
+          </button>
+          <button class="frame" type="button" aria-pressed="false">
+            <small>03</small>
+            <strong>Producers to consumers</strong>
+            <p>Plants capture energy. Animals pass it on.</p>
+          </button>
+        </div>
+        <div class="sheet">
+          <p>Read Grade 7 Ecosystems (sample). A food web shows how energy moves.</p>
+          <form action="#" onsubmit="return false">
+            <label class="visually-hidden" for="light-space-ask" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Add a classroom activity frame</label>
+            <input id="light-space-ask" name="space-ask" type="text" placeholder="Add a classroom activity frame">
+            <button type="submit">Add</button>
+          </form>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="plate" aria-label="Dark artboard">
+    <p class="plate-name">Dark</p>
+
+    <p class="shot-name">Login</p>
+    <article class="shot dark" aria-label="Login, dark">
+      <header class="mast">
+        <a href="#dark-login">Harness</a>
+        <span class="mast-school">Sample Academy</span>
+      </header>
+      <div class="login-body" id="dark-login">
+        <div class="login-col">
+          <p class="wordmark">Harness</p>
+          <p class="school">Sample Academy</p>
+          <hr class="login-rule">
+          <p class="sign-label">Faculty sign in</p>
+          <form action="#" method="post" onsubmit="return false">
+            <label class="field">
+              <span>Email</span>
+              <input id="dark-email" type="email" name="email" autocomplete="username" value="faculty@sample.academy">
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input id="dark-password" type="password" name="password" autocomplete="current-password" value="password">
+            </label>
+            <button class="btn btn-fill" type="submit">Continue</button>
+            <button class="btn btn-line" type="button">Continue with Google</button>
+          </form>
+          <p class="host-note">School documents stay on the Sample Academy host.</p>
+        </div>
+      </div>
+    </article>
+
+    <p class="shot-name">Chat</p>
+    <article class="shot dark" aria-label="Chat thread, dark">
+      <header class="mast">
+        <a href="#dark-chat">Harness</a>
+        <span class="mast-school">Sample Academy</span>
+      </header>
+      <div class="chat-body" id="dark-chat">
+        <nav class="index" aria-label="Threads">
+          <h2>Threads</h2>
+          <ul>
+            <li>
+              <a href="#dark-chat" aria-current="page">
+                <strong>Grade 7 Ecosystems</strong>
+                <em>9 Nov</em>
+              </a>
+            </li>
+            <li>
+              <a href="#dark-chat">
+                <strong>Permission form</strong>
+                <em>7 Nov</em>
+              </a>
+            </li>
+            <li>
+              <a href="#dark-chat">
+                <strong>Second quarter lab</strong>
+                <em>4 Nov</em>
+              </a>
+            </li>
+            <li>
+              <a href="#dark-chat">
+                <strong>Department memo</strong>
+                <em>28 Oct</em>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="reading">
+          <div class="article">
+            <p class="kicker">Grade 7 Ecosystems</p>
+            <p class="ask">How does a food web move energy in the Grade 7 ecosystems unit?</p>
+            <p class="answer">
+              Grade 7 Ecosystems (sample) says
+              <a class="cite" href="#dark-source">a food web shows how energy moves</a>
+              from producers through consumers in the living things unit. Arrows in the web point toward the organism that receives the energy.
+            </p>
+            <a class="source" id="dark-source" href="#dark-source">Grade 7 Science Curriculum Guide, page 32. Current.</a>
+          </div>
+          <form class="composer" action="#" onsubmit="return false">
+            <label for="dark-ask">Ask about approved school documents</label>
+            <input id="dark-ask" name="ask" type="text" placeholder="Ask about approved school documents">
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+    </article>
+
+    <p class="shot-name">Space</p>
+    <article class="shot dark" aria-label="Space, dark">
+      <header class="mast">
+        <a href="#dark-space">Harness</a>
+        <span class="mast-school">Sample Academy</span>
+      </header>
+      <div class="space-body" id="dark-space">
+        <h2 class="space-title">Ecosystems slide deck</h2>
+        <div class="frames">
+          <button class="frame" type="button" aria-pressed="false">
+            <small>01</small>
+            <strong>Grade 7 Ecosystems</strong>
+            <p>Living things and their environment.</p>
+          </button>
+          <button class="frame" type="button" aria-pressed="true">
+            <small>02</small>
+            <strong>Food web</strong>
+            <p>A food web shows how energy moves.</p>
+            <span class="inspect">Frame 2 · Food web · Grade 7 Ecosystems (sample)</span>
+          </button>
+          <button class="frame" type="button" aria-pressed="false">
+            <small>03</small>
+            <strong>Producers to consumers</strong>
+            <p>Plants capture energy. Animals pass it on.</p>
+          </button>
+        </div>
+        <div class="sheet">
+          <p>Read Grade 7 Ecosystems (sample). A food web shows how energy moves.</p>
+          <form action="#" onsubmit="return false">
+            <label for="dark-space-ask" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Add a classroom activity frame</label>
+            <input id="dark-space-ask" name="space-ask" type="text" placeholder="Add a classroom activity frame">
+            <button type="submit">Add</button>
+          </form>
+        </div>
+      </div>
+    </article>
+  </section>
+</body>
+</html>
