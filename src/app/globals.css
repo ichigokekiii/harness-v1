@@ -2,53 +2,59 @@
 
 :root {
   color-scheme: light;
-  --bg-root: #f7f7f5;
-  --bg-sidebar: #f3f2ee;
+  --bg-root: #f7f7f4;
+  --bg-sidebar: #f2f1ed;
   --bg-panel: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-soft: #eeece6;
-  --border-subtle: #e6e4de;
-  --text-primary: #1a1a18;
-  --text-secondary: #5c5a52;
-  --text-muted: #5f5c54;
-  --primary: #002d62;
-  --primary-hover: #000033;
-  --primary-ink: #ffffff;
+  --bg-soft: #ebeae5;
+  --bg-bubble: #ebeae5;
+  --border-subtle: #e3e2dd;
+  --text-primary: #26251e;
+  --text-secondary: #57564f;
+  --text-muted: #67665f;
+  --primary: #26251e;
+  --primary-hover: #3b3a33;
+  --primary-ink: #f7f7f4;
   --navy: #000033;
   --gold: #fdcc01;
-  --danger: #9f1d1d;
+  --danger: #b4232f;
   --danger-ink: #ffffff;
-  --warning: #8a6200;
+  --warning: #8a5a00;
+  --success: #1f7a58;
   --cite: #ffe512;
   --cite-ink: #000033;
   --cite-border: #003366;
-  --focus: #002d62;
-  --shadow: 0 12px 40px rgb(26 26 24 / 8%);
+  --focus: #26251e;
+  --shadow: 0 12px 32px -8px rgb(38 37 30 / 18%), 0 0 0 1px rgb(38 37 30 / 8%);
+  --shadow-composer: 0 0 0 1px rgb(38 37 30 / 10%), 0 8px 24px -10px rgb(38 37 30 / 22%);
 }
 
 .dark {
   color-scheme: dark;
-  --bg-root: #141413;
-  --bg-sidebar: #191918;
-  --bg-panel: #1e1e1c;
-  --bg-elevated: #242422;
-  --bg-soft: #2a2a28;
-  --border-subtle: #343431;
-  --text-primary: #eceae4;
-  --text-secondary: #c2bfb6;
-  --text-muted: #aaa79e;
-  --primary: #9ec0ef;
-  --primary-hover: #c5daf6;
-  --primary-ink: #0c1a33;
+  --bg-root: #1b1913;
+  --bg-sidebar: #14120b;
+  --bg-panel: #26241e;
+  --bg-elevated: #2b2923;
+  --bg-soft: #2b2923;
+  --bg-bubble: #2b2923;
+  --border-subtle: #34322b;
+  --text-primary: #edecec;
+  --text-secondary: #bdbbb5;
+  --text-muted: #a8a6a0;
+  --primary: #edecec;
+  --primary-hover: #d7d6d5;
+  --primary-ink: #14120b;
   --navy: #0c1a33;
-  --danger: #ffb4b4;
+  --danger: #ff9a9a;
   --danger-ink: #3b0a0a;
   --warning: #f0c36a;
+  --success: #6fd3a8;
   --cite: #ffe512;
   --cite-ink: #000033;
   --cite-border: #ffe512;
-  --focus: #ffffff;
-  --shadow: 0 16px 40px rgb(0 0 0 / 35%);
+  --focus: #edecec;
+  --shadow: 0 16px 40px -8px rgb(0 0 0 / 55%), 0 0 0 1px rgb(237 236 236 / 8%);
+  --shadow-composer: 0 0 0 1px rgb(237 236 236 / 9%), 0 10px 30px -12px rgb(0 0 0 / 60%);
 }
 
 @theme inline {
@@ -72,20 +78,34 @@
   --color-cite: var(--cite);
   --color-cite-ink: var(--cite-ink);
   --color-focus: var(--focus);
+  --color-bubble: var(--bg-bubble);
+  --color-success: var(--success);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --radius-control: 10px;
+  --radius-control: 8px;
   --radius-panel: 12px;
-  --radius-composer: 18px;
+  --radius-composer: 26px;
+  --shadow-pop: var(--shadow);
+  --shadow-composer: var(--shadow-composer);
 }
 
 @layer base {
   * { border-color: var(--border-subtle); }
   html, body { min-height: 100%; background: var(--bg-root); color: var(--text-primary); }
-  body { font-family: var(--font-sans); }
+  body {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
   button, a, input, textarea, select { outline: none; }
-  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  ::selection { background: var(--cite); color: var(--cite-ink); }
+  button:not(:disabled), [role="button"], label[for], summary { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+  ::selection { background: color-mix(in oklab, var(--text-primary) 16%, transparent); }
+  ::placeholder { color: var(--text-muted); opacity: 1; }
+  textarea, input { caret-color: var(--text-primary); }
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--text-primary) 18%, transparent) transparent; }
+  table { font-variant-numeric: tabular-nums; }
 }
 
 .sr-only {

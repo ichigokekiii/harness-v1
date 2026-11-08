@@ -1,3 +1,13 @@
+import { readFile } from "node:fs/promises";
+
+const css = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+
+function block(selector) {
+  const start = css.indexOf(`${selector} {`);
+  const body = css.slice(start, css.indexOf("}", start));
+  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map(([, name, value]) => [name, value]));
+}
+
 function channel(value) {
   const c = value / 255;
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -5,10 +15,7 @@ function channel(value) {
 
 function luminance(hex) {
   const raw = hex.replace("#", "");
-  const r = channel(parseInt(raw.slice(0, 2), 16));
-  const g = channel(parseInt(raw.slice(2, 4), 16));
-  const b = channel(parseInt(raw.slice(4, 6), 16));
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return 0.2126 * channel(parseInt(raw.slice(0, 2), 16)) + 0.7152 * channel(parseInt(raw.slice(2, 4), 16)) + 0.0722 * channel(parseInt(raw.slice(4, 6), 16));
 }
 
 function ratio(a, b) {
@@ -16,25 +23,26 @@ function ratio(a, b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+const text = ["text-primary", "text-secondary", "text-muted"];
+const surfaces = ["bg-root", "bg-sidebar", "bg-panel", "bg-soft"];
 const pairs = [
-  ["ink on canvas", "#1a1a18", "#f7f7f5", 4.5],
-  ["secondary on canvas", "#5c5a52", "#f7f7f5", 4.5],
-  ["muted on canvas", "#5f5c54", "#f7f7f5", 4.5],
-  ["white on navy button", "#ffffff", "#002d62", 4.5],
-  ["white on danger", "#ffffff", "#9f1d1d", 4.5],
-  ["navy on citation", "#000033", "#ffe512", 4.5],
-  ["dark ink on dark canvas", "#eceae4", "#141413", 4.5],
-  ["dark secondary", "#c2bfb6", "#141413", 4.5],
-  ["dark muted", "#aaa79e", "#141413", 4.5],
-  ["dark button ink", "#0c1a33", "#9ec0ef", 4.5],
-  ["gold on navy dock", "#fdcc01", "#000033", 3],
+  ...text.flatMap((fg) => surfaces.map((bg) => [fg, bg, 4.5])),
+  ["primary-ink", "primary", 4.5],
+  ["danger", "bg-root", 4.5],
+  ["warning", "bg-root", 4.5],
+  ["cite-ink", "cite", 4.5],
 ];
 
 let failed = false;
-for (const [name, fg, bg, min] of pairs) {
-  const score = ratio(fg, bg);
-  const ok = score >= min;
-  console.log(`${ok ? "ok" : "fail"} ${name}: ${score.toFixed(2)} (min ${min})`);
-  if (!ok) failed = true;
+let lowest = Infinity;
+for (const [theme, tokens] of [["light", block(":root")], ["dark", { ...block(":root"), ...block(".dark") }]]) {
+  for (const [fg, bg, min] of pairs) {
+    const score = ratio(tokens[fg], tokens[bg]);
+    lowest = Math.min(lowest, score);
+    const ok = score >= min;
+    if (!ok) failed = true;
+    console.log(`${ok ? "ok  " : "FAIL"} ${theme} ${fg} on ${bg}: ${score.toFixed(2)} (min ${min})`);
+  }
 }
+console.log(`lowest pair ${lowest.toFixed(2)}`);
 if (failed) process.exit(1);

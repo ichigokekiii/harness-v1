@@ -1,18 +1,17 @@
 "use client";
 
-import { At, CaretDown, PaperPlaneRight, Plus } from "@phosphor-icons/react";
+import { ArrowUp, At, CaretDown, Check, Copy, FileText, Plus, Warning, X } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { call } from "@/api/client";
 import { Shell } from "@/components/shell";
 import { LOCAL_MODEL } from "@/lib/model";
 import type { ChatMessage, Health, Thread } from "@/lib/domain";
 import { cn } from "@/lib/cn";
 
-type ThreadList = { threads: { id: string; title: string; updatedAt: string; preview: string }[] };
 type ThreadResponse = { thread: Thread; health: Health };
+type Citation = NonNullable<ChatMessage["citations"]>[number];
 
 const suggestions = [
   ["What should Grade 7 study about ecosystems?", "Grade 7 ecosystems"],
@@ -40,22 +39,16 @@ export function ChatThread({ id }: { id: string }) {
 function ChatColumn({ threadId }: { threadId?: string }) {
   const router = useRouter();
   const client = useQueryClient();
-  const list = useQuery({ queryKey: ["threads"], queryFn: () => call<ThreadList>("/api/harness/threads") });
   const thread = useQuery({
     queryKey: ["thread", threadId],
     enabled: Boolean(threadId),
     queryFn: () => call<ThreadResponse>(`/api/harness/threads/${threadId}`),
   });
   const health = useQuery({ queryKey: ["health"], queryFn: () => call<{ health: Health }>("/api/harness/health") });
-  const [text, setText] = useState("");
-  const [attached, setAttached] = useState<string | null>(null);
-  const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [modelOpen, setModelOpen] = useState(false);
-  const [active, setActive] = useState(0);
+  const [source, setSource] = useState<Citation | null>(null);
   const ask = useMutation({
     mutationFn: (value: string) => call<{ threadId: string }>("/api/harness/threads/ask", { method: "POST", body: { text: value } }),
     onSuccess: async (result) => {
-      setText("");
       await client.invalidateQueries({ queryKey: ["threads"] });
       await client.invalidateQueries({ queryKey: ["thread", result.threadId] });
       router.push(`/chat/${result.threadId}`);
@@ -72,61 +65,43 @@ function ChatColumn({ threadId }: { threadId?: string }) {
     },
   });
 
-  const message = thread.data?.thread.messages.filter((item) => item.role === "assistant").at(-1);
-  const citations = message?.citations ?? [];
-  const citation = citations[active];
   const modelDown = (thread.data?.health.model ?? health.data?.health.model) === "down";
+  const empty = !threadId && !ask.isPending;
 
-  const grouped = useMemo(() => list.data?.threads ?? [], [list.data?.threads]);
+  function openSource(citation: Citation) {
+    setSource(citation);
+    void call("/api/harness/activity/open", { method: "POST", body: { title: citation.title } });
+  }
+
+  const composer = (
+    <Composer
+      pending={ask.isPending}
+      error={ask.isError ? ask.error.message : null}
+      modelDown={modelDown}
+      onToggleModel={() => offline.mutate(modelDown ? "up" : "down")}
+      onSubmit={(value) => ask.mutate(value)}
+      autoFocus={empty}
+    />
+  );
 
   return (
-    <div className="grid min-h-[calc(100dvh-56px)] md:min-h-dvh md:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="hidden border-r border-line md:block">
-        <div className="p-3">
-          <Link className="flex min-h-11 items-center rounded-control px-2 text-sm font-medium hover:bg-soft" href="/chat">
-            New chat
-          </Link>
-        </div>
-        <div className="px-4 pb-2 text-xs text-muted">Recent</div>
-        <ul className="space-y-1 px-2">
-          {grouped.map((item) => (
-            <li key={item.id}>
-              <Link
-                className={cn("flex min-h-11 items-center rounded-control px-2 text-sm", item.id === threadId ? "bg-panel font-medium" : "text-secondary")}
-                href={`/chat/${item.id}`}
-              >
-                {item.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </aside>
-      <section className="flex min-w-0 flex-col">
-        <div className="flex gap-2 overflow-auto border-b border-line p-2 md:hidden">
-          <Link className="inline-flex min-h-11 shrink-0 items-center rounded-control px-2 text-sm" href="/chat">
-            New chat
-          </Link>
-          {grouped.map((item) => (
-            <Link key={item.id} className="inline-flex min-h-11 shrink-0 items-center rounded-control px-2 text-sm" href={`/chat/${item.id}`}>
-              {item.title}
-            </Link>
-          ))}
-        </div>
-        {modelDown ? (
-          <p className="border-b border-line bg-cite px-4 py-2 text-sm text-cite-ink" role="status">
-            Search only, model offline
-          </p>
-        ) : null}
-        <div className="mx-auto flex w-full max-w-[720px] flex-1 flex-col px-4 py-8">
-          {!threadId ? (
-            <div>
-              <h1 className="text-[28px] font-semibold tracking-tight">Chat</h1>
-              <p className="mt-2 text-sm text-secondary">Ask from the sample library. The answer stays next to the page.</p>
-              <div className="mt-6 grid gap-2 sm:grid-cols-2">
+    <div className="flex h-[calc(100dvh-48px)] min-w-0 md:h-dvh">
+      <section className="relative flex min-w-0 flex-1 flex-col">
+        <header className="hidden h-[52px] shrink-0 items-center px-5 md:flex">
+          <p className="truncate text-[15px] text-ink">{thread.data?.thread.title ?? ""}</p>
+        </header>
+
+        {empty ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-4 pb-[12vh]">
+            <div className="w-full max-w-[768px]">
+              <h1 className="mb-7 text-balance text-center text-[28px] font-normal tracking-[-0.02em]">What are we teaching today?</h1>
+              {modelDown ? <OfflineNote onRestore={() => offline.mutate("up")} /> : null}
+              {composer}
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {suggestions.map(([prompt, label]) => (
                   <button
                     key={label}
-                    className="min-h-11 rounded-panel border border-line bg-panel px-3 text-left text-sm"
+                    className="h-9 rounded-full border border-line px-3.5 text-[14px] text-secondary transition-colors hover:bg-soft hover:text-ink"
                     type="button"
                     onClick={() => ask.mutate(prompt)}
                   >
@@ -135,193 +110,393 @@ function ChatColumn({ threadId }: { threadId?: string }) {
                 ))}
               </div>
             </div>
-          ) : thread.isLoading ? (
-            <p role="status" className="text-sm text-secondary">Loading the thread</p>
-          ) : thread.isError ? (
-            <p className="text-sm text-danger">The thread could not load.</p>
-          ) : (
-            <ThreadBody
-              messages={thread.data?.thread.messages ?? []}
-              active={active}
-              onCite={(index) => {
-                setActive(index);
-                setSourcesOpen(true);
-                const title = citations[index]?.title;
-                if (title) void call("/api/harness/activity/open", { method: "POST", body: { title } });
-              }}
-              onTicket={() => ticket.mutate()}
-              ticketDone={ticket.isSuccess}
-            />
-          )}
-          <form
-            className="sticky bottom-4 mt-8 rounded-composer border border-line bg-panel p-3 shadow"
-            data-mp-def="composer"
-            data-mp-id="composer"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const value = text.trim();
-              if (!value) return;
-              ask.mutate(attached ? `${value}\nAttached: ${attached}` : value);
-            }}
-          >
-            {attached ? <p className="mb-2 text-xs text-secondary">Attached: {attached}</p> : null}
-            <label className="sr-only" htmlFor="composer">
-              Message
-            </label>
-            <textarea
-              id="composer"
-              className="min-h-16 w-full resize-none bg-transparent text-sm"
-              placeholder="Ask about a sample page"
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-            />
-            <div className="mt-2 flex items-center gap-1">
-              <label className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-secondary" title="Attach a file">
-                <Plus size={18} />
-                <span className="sr-only">Attach a file</span>
-                <input
-                  className="sr-only"
-                  type="file"
-                  onChange={(event) => setAttached(event.target.files?.[0]?.name ?? null)}
-                />
-              </label>
-              <button className="inline-flex size-11 items-center justify-center rounded-full text-secondary" type="button" aria-label="Mention a source" onClick={() => setSourcesOpen(true)}>
-                <At size={18} />
-              </button>
-              <div className="relative">
-                <button className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-sm text-secondary" type="button" aria-expanded={modelOpen} onClick={() => setModelOpen((value) => !value)}>
-                  {LOCAL_MODEL}
-                  <CaretDown size={14} />
-                </button>
-                {modelOpen ? (
-                  <div className="absolute bottom-12 left-0 z-10 w-64 rounded-panel border border-line bg-panel p-2 shadow">
-                    <p className="px-2 py-1 text-sm">{LOCAL_MODEL}</p>
-                    <p className="px-2 pb-2 text-xs text-muted">Runs on this machine</p>
-                    <button
-                      className="min-h-11 w-full rounded-control px-2 text-left text-sm hover:bg-soft"
-                      type="button"
-                      onClick={() => {
-                        offline.mutate(modelDown ? "up" : "down");
-                        setModelOpen(false);
-                      }}
-                    >
-                      {modelDown ? "Use the local model" : "Search only"}
-                    </button>
-                  </div>
-                ) : null}
+          </div>
+        ) : (
+          <>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="mx-auto w-full max-w-[768px] px-4 pb-10 pt-4 md:px-6">
+                {ask.isPending && !threadId ? (
+                  <PendingTurn text={ask.variables ?? ""} />
+                ) : thread.isLoading ? (
+                  <ThreadSkeleton />
+                ) : thread.isError ? (
+                  <p className="py-10 text-center text-[14px] text-danger">This chat could not load. Refresh to try again.</p>
+                ) : (
+                  <>
+                    <ThreadBody
+                      messages={thread.data?.thread.messages ?? []}
+                      onCite={openSource}
+                      onTicket={() => ticket.mutate()}
+                      ticketDone={ticket.isSuccess}
+                    />
+                    {ask.isPending ? <PendingTurn text={ask.variables ?? ""} /> : null}
+                  </>
+                )}
               </div>
-              <button className="ml-auto inline-flex size-11 items-center justify-center rounded-full bg-primary text-primary-ink" type="submit" aria-label="Send" disabled={ask.isPending}>
-                <PaperPlaneRight size={18} />
-              </button>
             </div>
-            {ask.isError ? <p className="mt-2 text-sm text-danger">{ask.error.message}</p> : null}
-          </form>
-        </div>
-        {sourcesOpen && citation ? (
-          <SourceRail citation={citation} onClose={() => setSourcesOpen(false)} />
-        ) : null}
+            <div className="shrink-0 bg-root px-4 md:px-6">
+              <div className="mx-auto w-full max-w-[768px]">
+                {modelDown ? <OfflineNote onRestore={() => offline.mutate("up")} /> : null}
+                {composer}
+                <p className="py-2.5 text-center text-[12px] text-muted">Harness answers from the sample library. Open the source to check the page.</p>
+              </div>
+            </div>
+          </>
+        )}
       </section>
+      {source ? <SourceRail citation={source} onClose={() => setSource(null)} /> : null}
+    </div>
+  );
+}
+
+function OfflineNote({ onRestore }: { onRestore: () => void }) {
+  return (
+    <p className="mx-auto mb-3 flex w-fit items-center gap-2 rounded-full bg-soft px-3 py-1.5 text-[13px] text-secondary" role="status">
+      <Warning size={14} className="text-warning" weight="fill" />
+      Search only, model offline
+      <button className="font-medium text-ink underline underline-offset-2" type="button" onClick={onRestore}>
+        Turn it back on
+      </button>
+    </p>
+  );
+}
+
+function Composer({
+  pending,
+  error,
+  modelDown,
+  onToggleModel,
+  onSubmit,
+  autoFocus,
+}: {
+  pending: boolean;
+  error: string | null;
+  modelDown: boolean;
+  onToggleModel: () => void;
+  onSubmit: (value: string) => void;
+  autoFocus: boolean;
+}) {
+  const [text, setText] = useState("");
+  const [attached, setAttached] = useState<string | null>(null);
+  const [modelOpen, setModelOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const ready = text.trim().length > 0 && !pending;
+
+  useEffect(() => {
+    if (!modelOpen) return;
+    function onDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) setModelOpen(false);
+    }
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [modelOpen]);
+
+  return (
+    <form
+      className="rounded-composer bg-panel px-2.5 pb-2 pt-3 shadow-composer transition-shadow focus-within:shadow-[0_0_0_1px_color-mix(in_oklab,var(--text-primary)_22%,transparent),0_8px_24px_-10px_rgb(38_37_30/22%)]"
+      data-mp-def="composer"
+      data-mp-id="composer"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const value = text.trim();
+        if (!value || pending) return;
+        onSubmit(attached ? `${value}\nAttached: ${attached}` : value);
+        setText("");
+        setAttached(null);
+      }}
+    >
+      {attached ? (
+        <div className="mb-2 ml-1.5 inline-flex items-center gap-2 rounded-xl border border-line py-1.5 pl-2.5 pr-1.5 text-[13px]">
+          <FileText size={16} className="text-secondary" />
+          <span className="max-w-[240px] truncate">{attached}</span>
+          <button className="inline-flex size-6 items-center justify-center rounded-md text-muted hover:bg-soft hover:text-ink" type="button" aria-label="Remove attachment" onClick={() => setAttached(null)}>
+            <X size={12} />
+          </button>
+        </div>
+      ) : null}
+      <label className="sr-only" htmlFor="composer">
+        Message
+      </label>
+      <textarea
+        id="composer"
+        autoFocus={autoFocus}
+        rows={1}
+        className="block max-h-52 min-h-7 w-full resize-none bg-transparent px-1.5 text-[16px] leading-7 [field-sizing:content] focus-visible:outline-none"
+        placeholder="Ask about a page in the library"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            event.currentTarget.form?.requestSubmit();
+          }
+        }}
+      />
+      <div className="mt-2 flex items-center gap-0.5">
+        <label className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full text-secondary hover:bg-soft hover:text-ink" title="Attach a file">
+          <Plus size={18} />
+          <span className="sr-only">Attach a file</span>
+          <input className="sr-only" type="file" onChange={(event) => setAttached(event.target.files?.[0]?.name ?? null)} />
+        </label>
+        <button className="inline-flex size-9 items-center justify-center rounded-full text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Mention a source" title="Mention a source" onClick={() => setText((value) => `${value}${value && !value.endsWith(" ") ? " " : ""}@`)}>
+          <At size={18} />
+        </button>
+        <div ref={menuRef} className="relative ml-1">
+          <button
+            className="inline-flex h-8 items-center gap-1 rounded-lg px-1.5 text-[13px] text-secondary hover:bg-soft hover:text-ink"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={modelOpen}
+            onClick={() => setModelOpen((value) => !value)}
+          >
+            {modelDown ? "Search only" : LOCAL_MODEL}
+            <CaretDown size={12} />
+          </button>
+          {modelOpen ? (
+            <div className="absolute bottom-[calc(100%+6px)] left-0 z-20 w-[264px] rounded-xl bg-elevated p-1.5 shadow-pop" role="menu">
+              <ModelOption
+                title={LOCAL_MODEL}
+                body="Runs on this machine"
+                selected={!modelDown}
+                onSelect={() => {
+                  if (modelDown) onToggleModel();
+                  setModelOpen(false);
+                }}
+              />
+              <ModelOption
+                title="Search only"
+                body="Returns pages without writing an answer"
+                selected={modelDown}
+                onSelect={() => {
+                  if (!modelDown) onToggleModel();
+                  setModelOpen(false);
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
+        <button
+          className={cn(
+            "ml-auto inline-flex size-9 items-center justify-center rounded-full transition-colors",
+            ready ? "bg-primary text-primary-ink hover:bg-primary-hover" : "bg-soft text-muted",
+          )}
+          type="submit"
+          aria-label="Send"
+          disabled={!ready}
+        >
+          <ArrowUp size={18} weight="bold" />
+        </button>
+      </div>
+      {error ? <p className="px-1.5 pt-1 text-[13px] text-danger">{error}</p> : null}
+    </form>
+  );
+}
+
+function ModelOption({ title, body, selected, onSelect }: { title: string; body: string; selected: boolean; onSelect: () => void }) {
+  return (
+    <button className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-soft" type="button" role="menuitemradio" aria-checked={selected} onClick={onSelect}>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px]">{title}</span>
+        <span className="block text-[12px] text-muted">{body}</span>
+      </span>
+      {selected ? <Check size={16} className="mt-0.5" /> : null}
+    </button>
+  );
+}
+
+function PendingTurn({ text }: { text: string }) {
+  return (
+    <div className="space-y-6 pt-6">
+      <div className="flex justify-end">
+        <p className="max-w-[78%] whitespace-pre-wrap rounded-[22px] bg-bubble px-4 py-2.5 text-[15px] leading-6">{text}</p>
+      </div>
+      <p className="animate-pulse text-[15px] text-muted" role="status">
+        Searching the library
+      </p>
+    </div>
+  );
+}
+
+function ThreadSkeleton() {
+  return (
+    <div className="space-y-6 pt-6" role="status" aria-label="Loading the chat">
+      <div className="ml-auto h-11 w-1/2 animate-pulse rounded-[22px] bg-soft" />
+      <div className="space-y-2.5">
+        <div className="h-4 w-11/12 animate-pulse rounded bg-soft" />
+        <div className="h-4 w-4/5 animate-pulse rounded bg-soft" />
+        <div className="h-4 w-2/3 animate-pulse rounded bg-soft" />
+      </div>
     </div>
   );
 }
 
 function ThreadBody({
   messages,
-  active,
   onCite,
   onTicket,
   ticketDone,
 }: {
   messages: ChatMessage[];
-  active: number;
-  onCite: (index: number) => void;
+  onCite: (citation: Citation) => void;
   onTicket: () => void;
   ticketDone: boolean;
 }) {
   return (
-    <div className="space-y-6">
-      {messages.map((message) => (
-        <article key={message.id}>
-          {message.role === "user" ? (
-            <p className="ml-auto max-w-[80%] rounded-composer bg-soft px-4 py-3 text-sm">{message.content}</p>
-          ) : (
-            <div>
-              {message.kind === "conflict" ? <p className="mb-2 text-sm font-medium text-warning">Sources disagree</p> : null}
-              {message.kind === "superseded" ? <p className="mb-2 text-sm font-medium">This passage is superseded</p> : null}
-              <p className="text-[15px] leading-7">
-                {message.segments?.length
-                  ? message.segments.map((segment, index) => (
-                      <span key={`${message.id}-${index}`}>
-                        {segment.text}
-                        {segment.cite ? (
-                          <button
-                            className="mx-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-cite px-2 text-xs font-medium text-cite-ink"
-                            type="button"
-                            aria-label={`Source ${segment.cite}, ${message.citations?.[segment.cite - 1]?.title ?? ""}, page ${message.citations?.[segment.cite - 1]?.page ?? ""}`}
-                            onClick={() => onCite(segment.cite! - 1)}
-                          >
-                            {segment.cite}
-                          </button>
-                        ) : null}
-                      </span>
-                    ))
-                  : message.content}
-              </p>
-              {message.citations?.map((citation) =>
-                citation.status === "superseded" ? (
-                  <p key={citation.id} className="mt-2 text-sm text-secondary">
-                    {citation.note}
-                  </p>
-                ) : null,
-              )}
-              {message.kind === "decline" || message.kind === "search" ? (
-                <button className="mt-3 min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={onTicket}>
-                  {ticketDone ? "Ticket sent" : "Report missing document"}
-                </button>
-              ) : null}
-            </div>
-          )}
-        </article>
-      ))}
-      <span className="sr-only">Active source {active + 1}</span>
+    <div className="space-y-8 pt-6">
+      {messages.map((message) =>
+        message.role === "user" ? (
+          <article key={message.id} className="flex justify-end">
+            <p className="max-w-[78%] whitespace-pre-wrap rounded-[22px] bg-bubble px-4 py-2.5 text-[15px] leading-6">{message.content}</p>
+          </article>
+        ) : (
+          <AssistantTurn key={message.id} message={message} onCite={onCite} onTicket={onTicket} ticketDone={ticketDone} />
+        ),
+      )}
     </div>
   );
 }
 
-function SourceRail({
-  citation,
-  onClose,
+function AssistantTurn({
+  message,
+  onCite,
+  onTicket,
+  ticketDone,
 }: {
-  citation: NonNullable<ChatMessage["citations"]>[number];
-  onClose: () => void;
+  message: ChatMessage;
+  onCite: (citation: Citation) => void;
+  onTicket: () => void;
+  ticketDone: boolean;
 }) {
+  const [copied, setCopied] = useState(false);
+  const citations = message.citations ?? [];
+  const flag =
+    message.kind === "conflict" ? "Sources disagree" : message.kind === "superseded" ? "This passage is superseded" : null;
+
   return (
-    <aside className="fixed inset-y-0 right-0 z-30 w-full max-w-[380px] overflow-auto border-l border-line bg-panel p-4 shadow" data-mp-def="source-rail" data-mp-id={`source-${citation.id}`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Sources</h2>
-        <button className="min-h-11 px-2 text-sm" type="button" onClick={onClose}>
-          Close
+    <article className="group">
+      {flag ? (
+        <p className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-warning">
+          <Warning size={14} weight="fill" />
+          {flag}
+        </p>
+      ) : null}
+      <p className="text-[16px] leading-7">
+        {message.segments?.length
+          ? message.segments.map((segment, index) => {
+              const citation = segment.cite ? citations[segment.cite - 1] : undefined;
+              return (
+                <span key={`${message.id}-${index}`}>
+                  {segment.text}
+                  {segment.cite && citation ? (
+                    <button
+                      className="relative mx-0.5 inline-flex h-[20px] min-w-[20px] -translate-y-px items-center justify-center rounded-full bg-cite px-1.5 align-middle text-[11px] font-semibold text-cite-ink after:absolute after:-inset-3 hover:brightness-95"
+                      type="button"
+                      aria-label={`Source ${segment.cite}, ${citation.title}, page ${citation.page}`}
+                      onClick={() => onCite(citation)}
+                    >
+                      {segment.cite}
+                    </button>
+                  ) : null}
+                </span>
+              );
+            })
+          : message.content}
+      </p>
+      {citations
+        .filter((citation) => citation.status === "superseded" && citation.note)
+        .map((citation) => (
+          <p key={citation.id} className="mt-2 text-[14px] text-secondary">
+            {citation.note}
+          </p>
+        ))}
+      {citations.length ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {citations.map((citation, index) => (
+            <button
+              key={citation.id}
+              className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-line px-3 text-[13px] text-secondary transition-colors hover:bg-soft hover:text-ink"
+              type="button"
+              onClick={() => onCite(citation)}
+            >
+              <span className="grid size-4 place-items-center rounded-full bg-cite text-[10px] font-semibold text-cite-ink">{index + 1}</span>
+              <span className="truncate">{citation.title}</span>
+              <span className="shrink-0 text-muted">p. {citation.page}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-2 flex items-center gap-1">
+        <button
+          className="inline-flex size-8 items-center justify-center rounded-lg text-muted hover:bg-soft hover:text-ink"
+          type="button"
+          aria-label={copied ? "Copied" : "Copy answer"}
+          title={copied ? "Copied" : "Copy"}
+          onClick={() => {
+            void navigator.clipboard?.writeText(message.content);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1400);
+          }}
+        >
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+        </button>
+        {message.kind === "decline" || message.kind === "search" ? (
+          <button
+            className="inline-flex h-8 items-center rounded-full border border-line px-3 text-[13px] hover:bg-soft disabled:text-muted"
+            type="button"
+            disabled={ticketDone}
+            onClick={onTicket}
+          >
+            {ticketDone ? "Reported to the registrar" : "Report missing document"}
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function SourceRail({ citation, onClose }: { citation: Citation; onClose: () => void }) {
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <aside
+      className="fixed inset-0 z-30 flex flex-col bg-panel lg:static lg:w-[440px] lg:shrink-0 lg:border-l lg:border-line"
+      data-mp-def="source-rail"
+      data-mp-id={`source-${citation.id}`}
+      aria-label="Source"
+    >
+      <div className="flex h-[52px] shrink-0 items-center justify-between pl-5 pr-2">
+        <h2 className="text-[15px] font-medium">Sources</h2>
+        <button className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Close sources" onClick={onClose}>
+          <X size={18} />
         </button>
       </div>
-      <p className="mt-3 text-sm font-medium">{citation.title}</p>
-      <p className="text-xs text-muted">Page {citation.page}</p>
-      {citation.note ? <p className="mt-2 text-sm text-secondary">{citation.note}</p> : null}
-      <article className="relative mt-4 min-h-[420px] rounded-panel border border-line bg-white p-6 text-sm leading-6 text-cite-ink">
-        <p className="text-xs uppercase tracking-wide text-muted">Sample page</p>
-        <p className="mt-6">{citation.title}</p>
-        <mark
-          className="mt-4 block border border-cite-ink bg-cite px-2 py-3 text-cite-ink"
-          style={{ marginTop: citation.highlightTop }}
-        >
-          {citation.snippet}
-        </mark>
-      </article>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+        <p className="text-[15px] font-medium">{citation.title}</p>
+        <p className="mt-0.5 text-[13px] text-muted">Page {citation.page}</p>
+        {citation.note ? <p className="mt-3 text-[14px] leading-6 text-secondary">{citation.note}</p> : null}
+        <article className="relative mt-5 min-h-[480px] rounded-lg bg-white px-7 py-8 text-[13px] leading-6 text-[#26251e] shadow-[0_1px_2px_rgb(38_37_30/8%),0_8px_24px_-12px_rgb(38_37_30/25%)] ring-1 ring-black/5">
+          <p className="text-[11px] font-medium text-[#67665f]">Sample page {citation.page}</p>
+          <p className="mt-6 font-medium">{citation.title}</p>
+          <div className="mt-4 space-y-2" aria-hidden>
+            <div className="h-2 w-full rounded bg-black/[0.06]" />
+            <div className="h-2 w-11/12 rounded bg-black/[0.06]" />
+            <div className="h-2 w-4/5 rounded bg-black/[0.06]" />
+          </div>
+          <mark className="block rounded-sm border border-cite-ink/30 bg-cite px-2 py-2 text-cite-ink" style={{ marginTop: citation.highlightTop }}>
+            {citation.snippet}
+          </mark>
+          <div className="mt-4 space-y-2" aria-hidden>
+            <div className="h-2 w-full rounded bg-black/[0.06]" />
+            <div className="h-2 w-3/4 rounded bg-black/[0.06]" />
+          </div>
+        </article>
+      </div>
     </aside>
   );
 }

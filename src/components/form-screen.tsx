@@ -88,7 +88,7 @@ export function FormEditor({ id }: { id: string }) {
                     />
                   ) : field.kind === "yesno" ? (
                     <select
-                      className="mt-1 min-h-11 w-full rounded-control border border-line bg-panel px-3"
+                      className="mt-1 min-h-9 w-full rounded-control border border-line bg-panel px-3"
                       value={field.value}
                       onChange={(event) =>
                         setDraft({ ...form, fields: form.fields.map((item) => (item.id === field.id ? { ...item, value: event.target.value } : item)) })
@@ -100,7 +100,7 @@ export function FormEditor({ id }: { id: string }) {
                     </select>
                   ) : (
                     <input
-                      className="mt-1 min-h-11 w-full rounded-control border border-line bg-panel px-3"
+                      className="mt-1 min-h-9 w-full rounded-control border border-line bg-panel px-3"
                       type={field.kind === "date" ? "date" : "text"}
                       value={field.value}
                       onChange={(event) =>
@@ -114,10 +114,10 @@ export function FormEditor({ id }: { id: string }) {
                 <p className="text-sm">Signature</p>
                 <canvas ref={canvas} width={480} height={160} className="mt-1 w-full rounded-control border border-line bg-white" aria-label="Signature pad" />
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <button className="min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => pad.current?.clear()}>
+                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => pad.current?.clear()}>
                     Clear signature
                   </button>
-                  <label className="inline-flex min-h-11 cursor-pointer items-center rounded-control border border-line px-3 text-sm">
+                  <label className="inline-flex min-h-9 cursor-pointer items-center rounded-control border border-line px-3 text-sm">
                     Upload signature
                     <input
                       className="sr-only"
@@ -140,10 +140,10 @@ export function FormEditor({ id }: { id: string }) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="min-h-11 rounded-control bg-primary px-4 text-sm text-primary-ink" type="submit">
+                <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink" type="submit">
                   Save draft
                 </button>
-                <button className="min-h-11 rounded-control border border-line px-4 text-sm" type="button" onClick={() => window.print()}>
+                <button className="min-h-9 rounded-control border border-line px-4 text-sm" type="button" onClick={() => window.print()}>
                   Export PDF
                 </button>
               </div>

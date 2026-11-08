@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 test("faculty, admin, and super admin land on their own homes", async ({ page }) => {
   await login(page, "faculty");
   await expect(page).toHaveURL(/\/chat$/);
-  await expect(page.getByRole("heading", { name: "Chat" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What are we teaching today?" })).toBeVisible();
 
   await login(page, "admin");
   await expect(page).toHaveURL(/\/admin\/queue$/);

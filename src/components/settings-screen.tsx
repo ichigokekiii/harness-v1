@@ -38,7 +38,7 @@ export function SettingsScreen() {
         </section>
         <section className="mt-4 max-w-lg rounded-panel border border-line bg-panel p-4">
           <h2 className="text-sm font-medium">Theme</h2>
-          <button className="mt-3 min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => setTheme(dark ? "light" : "dark")}>
+          <button className="mt-3 min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => setTheme(dark ? "light" : "dark")}>
             {dark ? "Switch to light theme" : "Switch to dark theme"}
           </button>
         </section>
@@ -49,16 +49,16 @@ export function SettingsScreen() {
           <h2 className="text-sm font-medium">Password</h2>
           <label className="block text-sm">
             Current password
-            <input className="mt-1 min-h-11 w-full rounded-control border border-line px-3" type="password" {...form.register("current")} />
+            <input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" type="password" {...form.register("current")} />
           </label>
           <label className="block text-sm">
             New password
-            <input className="mt-1 min-h-11 w-full rounded-control border border-line px-3" type="password" {...form.register("next")} />
+            <input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" type="password" {...form.register("next")} />
           </label>
           {form.formState.errors.next ? <p className="text-sm text-danger">{form.formState.errors.next.message}</p> : null}
           {save.isError ? <p className="text-sm text-danger">{save.error.message}</p> : null}
           {save.isSuccess ? <p className="text-sm" role="status">Password updated.</p> : null}
-          <button className="min-h-11 rounded-control bg-primary px-4 text-sm text-primary-ink" type="submit">
+          <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink" type="submit">
             Update password
           </button>
         </form>

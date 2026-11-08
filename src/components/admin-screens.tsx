@@ -26,7 +26,7 @@ export function QueueScreen() {
       <Panel
         title="Queue"
         action={
-          <label className="inline-flex min-h-11 cursor-pointer items-center rounded-control bg-primary px-4 text-sm text-primary-ink">
+          <label className="inline-flex min-h-9 cursor-pointer items-center rounded-control bg-primary px-4 text-sm text-primary-ink">
             Upload document
             <input className="sr-only" aria-label="Upload document" type="file" onChange={(event) => event.target.files?.[0] && upload.mutate(event.target.files[0])} />
           </label>
@@ -51,7 +51,7 @@ export function QueueScreen() {
               {items.map((item) => (
                 <tr key={item.id} className="border-t border-line">
                   <td className="px-3 py-2">
-                    <Link className="inline-flex min-h-11 items-center font-medium" href={`/admin/queue/${item.id}`}>
+                    <Link className="inline-flex min-h-9 items-center font-medium" href={`/admin/queue/${item.id}`}>
                       {item.title}
                     </Link>
                   </td>
@@ -130,25 +130,25 @@ export function ReviewScreen({ id }: { id: string }) {
                 {(["subject", "grade", "type", "department"] as const).map((field) => (
                   <label key={field} className="block text-sm capitalize">
                     {field}
-                    <input className="mt-1 min-h-11 w-full rounded-control border border-line bg-root px-3" {...form.register(field)} />
+                    <input className="mt-1 min-h-9 w-full rounded-control border border-line bg-root px-3" {...form.register(field)} />
                   </label>
                 ))}
               </div>
               <label className="mt-3 block text-sm">
                 Visibility
-                <select className="mt-1 min-h-11 w-full rounded-control border border-line bg-root px-3" {...form.register("visibility")}>
+                <select className="mt-1 min-h-9 w-full rounded-control border border-line bg-root px-3" {...form.register("visibility")}>
                   <option value="department">Department</option>
                   <option value="institution">Institution</option>
                 </select>
               </label>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button className="min-h-11 rounded-control bg-primary px-4 text-sm text-primary-ink" type="button" onClick={() => review.mutate("approve")}>
+                <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink" type="button" onClick={() => review.mutate("approve")}>
                   Approve
                 </button>
-                <button className="min-h-11 rounded-control border border-line px-4 text-sm" type="button" onClick={() => review.mutate("needs_transcription")}>
+                <button className="min-h-9 rounded-control border border-line px-4 text-sm" type="button" onClick={() => review.mutate("needs_transcription")}>
                   Needs transcription
                 </button>
-                <button className="min-h-11 rounded-control bg-danger px-4 text-sm text-danger-ink" type="button" onClick={() => review.mutate("reject")}>
+                <button className="min-h-9 rounded-control bg-danger px-4 text-sm text-danger-ink" type="button" onClick={() => review.mutate("reject")}>
                   Reject
                 </button>
               </div>
@@ -184,10 +184,10 @@ export function DocumentsScreen() {
                   {doc.scope} · {doc.visibility} · {doc.status} · v{doc.version}
                 </p>
               </div>
-              <button className="min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => update.mutate({ id: doc.id, visibility: doc.visibility === "institution" ? "department" : "institution" })}>
+              <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => update.mutate({ id: doc.id, visibility: doc.visibility === "institution" ? "department" : "institution" })}>
                 Toggle visibility
               </button>
-              <button className="min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => update.mutate({ id: doc.id, status: "superseded" })}>
+              <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => update.mutate({ id: doc.id, status: "superseded" })}>
                 Supersede
               </button>
             </li>
@@ -227,17 +227,17 @@ export function PeopleScreen() {
     <Frame>
       <Panel title="People">
         <form className="mb-4 grid gap-3 rounded-panel border border-line bg-panel p-4 md:grid-cols-4" onSubmit={form.handleSubmit((values) => invite.mutate(values))}>
-          <label className="text-sm">Name<input className="mt-1 min-h-11 w-full rounded-control border border-line px-3" {...form.register("name")} /></label>
-          <label className="text-sm">Email<input className="mt-1 min-h-11 w-full rounded-control border border-line px-3" {...form.register("email")} /></label>
-          <label className="text-sm">Department<input className="mt-1 min-h-11 w-full rounded-control border border-line px-3" {...form.register("department")} /></label>
+          <label className="text-sm">Name<input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("name")} /></label>
+          <label className="text-sm">Email<input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("email")} /></label>
+          <label className="text-sm">Department<input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("department")} /></label>
           <label className="text-sm">
             Role
-            <select className="mt-1 min-h-11 w-full rounded-control border border-line px-3" {...form.register("role")}>
+            <select className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("role")}>
               <option value="faculty">Faculty</option>
               <option value="institution_admin">Institution admin</option>
             </select>
           </label>
-          <button className="min-h-11 rounded-control bg-primary px-4 text-sm text-primary-ink md:col-span-4 md:justify-self-start" type="submit">
+          <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink md:col-span-4 md:justify-self-start" type="submit">
             Invite
           </button>
           {form.formState.errors.email ? <p className="text-sm text-danger md:col-span-4">{form.formState.errors.email.message}</p> : null}
@@ -250,7 +250,7 @@ export function PeopleScreen() {
                 <p className="text-xs text-muted">{person.role} · {person.department} · {person.status}</p>
               </div>
               <button
-                className="min-h-11 rounded-control border border-line px-3 text-sm"
+                className="min-h-9 rounded-control border border-line px-3 text-sm"
                 type="button"
                 onClick={() => status.mutate({ id: person.id, status: person.status === "active" ? "disabled" : "active" })}
               >
@@ -283,10 +283,10 @@ export function TicketsScreen() {
               <p className="mt-1 text-xs text-muted">{ticket.kind.replaceAll("_", " ")} · {ticket.status}</p>
               {ticket.status === "open" ? (
                 <div className="mt-3 flex gap-2">
-                  <button className="min-h-11 rounded-control bg-primary px-3 text-sm text-primary-ink" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "approve" })}>
+                  <button className="min-h-9 rounded-control bg-primary px-3 text-sm text-primary-ink" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "approve" })}>
                     Approve
                   </button>
-                  <button className="min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "dismiss" })}>
+                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "dismiss" })}>
                     Dismiss
                   </button>
                 </div>
@@ -343,7 +343,7 @@ export function AuditScreen({ scope }: { scope: "admin" | "super" }) {
       <Panel title="Audit">
         <label className="mb-3 block text-sm">
           Filter
-          <input className="mt-1 min-h-11 w-full max-w-md rounded-control border border-line bg-panel px-3" value={q} onChange={(event) => setQ(event.target.value)} />
+          <input className="mt-1 min-h-9 w-full max-w-md rounded-control border border-line bg-panel px-3" value={q} onChange={(event) => setQ(event.target.value)} />
         </label>
         {(query.data?.events.length ?? 0) === 0 ? <StateMessage title="No events" body="Try a different filter." /> : null}
         <ul className="divide-y divide-line rounded-panel border border-line bg-panel">

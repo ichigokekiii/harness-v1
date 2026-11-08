@@ -34,7 +34,7 @@ export function LibraryScreen() {
       <Panel
         title="Library"
         action={
-          <label className="inline-flex min-h-11 cursor-pointer items-center rounded-control bg-primary px-4 text-sm text-primary-ink">
+          <label className="inline-flex min-h-9 cursor-pointer items-center rounded-control bg-primary px-4 text-sm text-primary-ink">
             Upload
             <input
               className="sr-only"
@@ -52,7 +52,7 @@ export function LibraryScreen() {
           {(["institution", "personal"] as const).map((item) => (
             <button
               key={item}
-              className={`min-h-11 rounded-control px-3 text-sm ${scope === item ? "bg-panel font-medium shadow-sm" : "text-secondary"}`}
+              className={`min-h-9 rounded-control px-3 text-sm ${scope === item ? "bg-panel font-medium shadow-sm" : "text-secondary"}`}
               type="button"
               role="tab"
               aria-selected={scope === item}
@@ -78,7 +78,7 @@ export function LibraryScreen() {
                   {doc.shareStatus ? ` · share ${doc.shareStatus}` : ""}
                 </p>
                 <details className="mt-1 text-xs text-secondary">
-                  <summary className="min-h-11 cursor-pointer py-2">Version history</summary>
+                  <summary className="min-h-9 cursor-pointer py-2">Version history</summary>
                   <ul>
                     {doc.versions.map((version) => (
                       <li key={`${doc.id}-${version.version}`}>
@@ -90,11 +90,11 @@ export function LibraryScreen() {
               </div>
               <div className="flex gap-2">
                 {doc.scope === "personal" ? (
-                  <button className="min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => share.mutate(doc.id)}>
+                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => share.mutate(doc.id)}>
                     Share to institution library
                   </button>
                 ) : (
-                  <button className="min-h-11 rounded-control border border-line px-3 text-sm" type="button" onClick={() => retire.mutate(doc.id)}>
+                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => retire.mutate(doc.id)}>
                     Request retirement
                   </button>
                 )}

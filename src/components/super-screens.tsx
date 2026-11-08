@@ -102,7 +102,7 @@ export function HealthScreen() {
     <Shell>
       <Panel title="Health">
         {health ? (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-line overflow-hidden rounded-panel border border-line bg-panel">
             {(
               [
                 ["model", "Model"],
@@ -110,13 +110,16 @@ export function HealthScreen() {
                 ["index", "Index"],
               ] as const
             ).map(([key, label]) => (
-              <li key={key} className="flex items-center justify-between rounded-panel border border-line bg-panel px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium">{label}</p>
-                  <p className="text-xs text-muted">{health[key] === "up" ? "Running" : "Offline"}</p>
+              <li key={key} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className={health[key] === "up" ? "size-2 rounded-full bg-success" : "size-2 rounded-full bg-danger"} aria-hidden />
+                  <div>
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-muted">{health[key] === "up" ? "Running" : "Offline"}</p>
+                  </div>
                 </div>
                 <button
-                  className="min-h-11 rounded-control border border-line px-3 text-sm"
+                  className="h-8 rounded-lg px-3 text-[13px] text-secondary hover:bg-soft hover:text-ink"
                   type="button"
                   onClick={() => update.mutate({ [key]: health[key] === "up" ? "down" : "up" })}
                 >
