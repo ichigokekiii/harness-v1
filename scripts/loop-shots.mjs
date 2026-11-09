@@ -10,8 +10,8 @@ const themes = only.includes("dark") ? ["dark"] : only.includes("light") ? ["lig
 const widths = only.includes("narrow") ? [390] : only.includes("wide") ? [1440] : [1440, 390];
 
 const plans = [
-  { user: "faculty", shots: [["chat", "/chat"], ["thread", "/chat/thread-ecosystems", "cite"], ["conflict", "/chat/thread-conflict"], ["library", "/library"], ["space", "/space/board-ecosystems"], ["forms", "/forms/form-leave"], ["eval", "/eval"], ["settings", "/settings"]] },
-  { user: "admin", shots: [["queue", "/admin/queue"], ["review", "/admin/queue"], ["people", "/admin/people"], ["tickets", "/admin/tickets"], ["audit", "/admin/audit"]] },
+  { user: "faculty", shots: [["chat", "/chat"], ["thread", "/chat/thread-ecosystems", "cite"], ["conflict", "/chat/thread-conflict"], ["library", "/library"], ["space", "/space/board-ecosystems"], ["forms", "/forms/form-leave"], ["settings", "/settings"]] },
+  { user: "admin", shots: [["queue", "/admin/queue"], ["review", "/admin/queue"], ["people", "/admin/people"], ["tickets", "/admin/tickets"], ["audit", "/admin/audit"], ["eval", "/eval"]] },
   { user: "superadmin", shots: [["overview", "/super-admin"], ["institutions", "/super-admin/institutions"], ["health", "/super-admin/health"]] },
 ];
 

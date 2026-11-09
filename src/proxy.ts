@@ -12,7 +12,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === "/") {
     return NextResponse.redirect(new URL(session ? homeFor(session.role) : "/login", request.url));
   }
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/register") {
     if (session) return NextResponse.redirect(new URL(homeFor(session.role), request.url));
     return NextResponse.next();
   }

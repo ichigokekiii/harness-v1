@@ -1,8 +1,10 @@
 "use client";
 
+import { Archive, ShareNetwork, UploadSimple } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { call } from "@/api/client";
+import { FileCard, lessonCover } from "@/components/file-card";
 import { Panel, Shell, StateMessage } from "@/components/shell";
 import type { LibraryDocument } from "@/lib/domain";
 
@@ -34,7 +36,8 @@ export function LibraryScreen() {
       <Panel
         title="Library"
         action={
-          <label className="inline-flex min-h-9 cursor-pointer items-center rounded-control bg-primary px-4 text-sm text-primary-ink">
+          <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-medium text-primary-ink">
+            <UploadSimple size={16} />
             Upload
             <input
               className="sr-only"
@@ -58,7 +61,7 @@ export function LibraryScreen() {
               aria-selected={scope === item}
               onClick={() => setScope(item)}
             >
-              {item === "institution" ? "Institution" : "My folder"}
+              {item === "institution" ? "Slides" : "My folder"}
             </button>
           ))}
         </div>
@@ -68,18 +71,31 @@ export function LibraryScreen() {
         {query.isLoading ? <p role="status">Loading the library</p> : null}
         {query.isError ? <StateMessage title="Library unavailable" body="Try the folder again." onRetry={() => void query.refetch()} /> : null}
         {!query.isLoading && docs.length === 0 ? <StateMessage title="Nothing in this folder" body="Upload a PDF, JPEG, or PNG. A DOCX file can be a slide source." /> : null}
-        <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
-          {docs.map((doc) => (
-            <li key={doc.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium">{doc.title}</p>
-                <p className="text-xs text-muted">
-                  {doc.kind} · {doc.pageCount} pages · {doc.status}
-                  {doc.shareStatus ? ` · share ${doc.shareStatus}` : ""}
-                </p>
-                <details className="mt-1 text-xs text-secondary">
-                  <summary className="min-h-9 cursor-pointer py-2">Version history</summary>
-                  <ul>
+        <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {docs.map((doc, index) => (
+            <li key={doc.id} className="min-w-0">
+              <FileCard
+                title={doc.title}
+                detail={`${doc.kind} · ${doc.pageCount} pages · ${doc.status}${doc.shareStatus ? ` · share ${doc.shareStatus}` : ""}`}
+                preview={doc.versions.at(-1)?.note || doc.title}
+                image={lessonCover(index)}
+                slide={index % 2 === 0 ? { kicker: "Grade 7 English", title: "Show, don't tell" } : undefined}
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2 px-0.5">
+                {doc.scope === "personal" ? (
+                  <button className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={() => share.mutate(doc.id)}>
+                    <ShareNetwork size={15} />
+                    Share to institution library
+                  </button>
+                ) : (
+                  <button className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={() => retire.mutate(doc.id)}>
+                    <Archive size={15} />
+                    Request retirement
+                  </button>
+                )}
+                <details className="text-[12px] text-secondary">
+                  <summary className="cursor-pointer rounded-lg px-2 py-1 hover:bg-soft">Version history</summary>
+                  <ul className="mt-1 space-y-1 px-2">
                     {doc.versions.map((version) => (
                       <li key={`${doc.id}-${version.version}`}>
                         v{version.version}: {version.note}
@@ -87,17 +103,6 @@ export function LibraryScreen() {
                     ))}
                   </ul>
                 </details>
-              </div>
-              <div className="flex gap-2">
-                {doc.scope === "personal" ? (
-                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => share.mutate(doc.id)}>
-                    Share to institution library
-                  </button>
-                ) : (
-                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => retire.mutate(doc.id)}>
-                    Request retirement
-                  </button>
-                )}
               </div>
             </li>
           ))}

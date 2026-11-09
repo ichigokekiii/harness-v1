@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
   --bg-root: #f7f7f4;
@@ -21,9 +23,9 @@
   --danger-ink: #ffffff;
   --warning: #8a5a00;
   --success: #1f7a58;
-  --cite: #ffe512;
-  --cite-ink: #000033;
-  --cite-border: #003366;
+  --cite: #f3d56a;
+  --cite-ink: #26251e;
+  --cite-border: #8a6a12;
   --focus: #26251e;
   --shadow: 0 12px 32px -8px rgb(38 37 30 / 18%), 0 0 0 1px rgb(38 37 30 / 8%);
   --shadow-composer: 0 0 0 1px rgb(38 37 30 / 10%), 0 8px 24px -10px rgb(38 37 30 / 22%);
@@ -49,9 +51,9 @@
   --danger-ink: #3b0a0a;
   --warning: #f0c36a;
   --success: #6fd3a8;
-  --cite: #ffe512;
-  --cite-ink: #000033;
-  --cite-border: #ffe512;
+  --cite: #e6c35c;
+  --cite-ink: #1b1913;
+  --cite-border: #e6c35c;
   --focus: #edecec;
   --shadow: 0 16px 40px -8px rgb(0 0 0 / 55%), 0 0 0 1px rgb(237 236 236 / 8%);
   --shadow-composer: 0 0 0 1px rgb(237 236 236 / 9%), 0 10px 30px -12px rgb(0 0 0 / 60%);
@@ -158,4 +160,13 @@
   body * { visibility: hidden; }
   .print-root, .print-root * { visibility: visible; }
   .print-root { position: static; width: auto; height: auto; overflow: visible; }
+}
+
+.theme-icon {
+  animation: theme-icon 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes theme-icon {
+  from { transform: rotate(-50deg) scale(0.4); opacity: 0; }
+  to { transform: none; opacity: 1; }
 }

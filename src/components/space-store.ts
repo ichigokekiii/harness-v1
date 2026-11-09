@@ -30,7 +30,10 @@ export const useSpace = create<SpaceState>((set) => ({
   future: [],
   selectedId: null,
   tool: "select",
-  load: (board) => set({ board: structuredClone(board), past: [], future: [], selectedId: board.shapes[0]?.id ?? null }),
+  load: (board) => {
+    const shapes = nestParts(structuredClone(board.shapes));
+    set({ board: { ...structuredClone(board), shapes }, past: [], future: [], selectedId: shapes[0]?.id ?? null });
+  },
   setTool: (tool) => set({ tool }),
   select: (selectedId) => set({ selectedId }),
   patch: (id, partial) =>
@@ -44,11 +47,12 @@ export const useSpace = create<SpaceState>((set) => ({
     set((state) => {
       if (!state.board) return state;
       const before = { shapes: structuredClone(state.board.shapes), log: structuredClone(state.board.log) };
+      const pieces = splitFrame(shape);
       return {
         past: [...state.past, before].slice(-50),
         future: [],
         selectedId: shape.id,
-        board: { ...state.board, shapes: [...state.board.shapes, shape] },
+        board: { ...state.board, shapes: [...state.board.shapes, ...pieces] },
       };
     }),
   removeSelected: () =>
@@ -59,7 +63,7 @@ export const useSpace = create<SpaceState>((set) => ({
         past: [...state.past, before].slice(-50),
         future: [],
         selectedId: null,
-        board: { ...state.board, shapes: state.board.shapes.filter((shape) => shape.id !== state.selectedId) },
+        board: { ...state.board, shapes: dropIds(state.board.shapes, state.selectedId) },
       };
     }),
   reorder: (id, direction) =>
@@ -102,4 +106,69 @@ export const useSpace = create<SpaceState>((set) => ({
 
 export function snapshot(board: Board): Snap {
   return { shapes: structuredClone(board.shapes), log: structuredClone(board.log) };
+}
+
+function splitFrame(shape: Shape): Shape[] {
+  if (shape.kind !== "frame" || shape.parentId || (!shape.text && !shape.image)) return [shape];
+  const parent: Shape = { ...shape, text: "", image: undefined };
+  const parts: Shape[] = [parent];
+  if (shape.text) {
+    parts.push({
+      ...shape,
+      id: `${shape.id}-text`,
+      parentId: shape.id,
+      kind: "text",
+      x: 24,
+      y: 28,
+      w: shape.image ? Math.round(shape.w * 0.52) : shape.w - 48,
+      h: shape.h - 56,
+      fill: "transparent",
+      stroke: "transparent",
+      image: undefined,
+      slide: false,
+      radius: 0,
+    });
+  }
+  if (shape.image) {
+    parts.push({
+      ...shape,
+      id: `${shape.id}-image`,
+      parentId: shape.id,
+      kind: "rect",
+      x: Math.round(shape.w * 0.58),
+      y: 0,
+      w: Math.round(shape.w * 0.42),
+      h: shape.h,
+      text: "",
+      fill: "transparent",
+      stroke: "transparent",
+      slide: false,
+      radius: 0,
+    });
+  }
+  return parts;
+}
+
+export function nestParts(shapes: Shape[]): Shape[] {
+  const parents = new Set(shapes.map((shape) => shape.parentId).filter((id): id is string => Boolean(id)));
+  return shapes.flatMap((shape) => {
+    if (shape.parentId) return [shape];
+    if (shape.kind === "frame" && !parents.has(shape.id)) return splitFrame(shape);
+    return [shape];
+  });
+}
+
+function dropIds(shapes: Shape[], selectedId: string) {
+  const drop = new Set([selectedId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const shape of shapes) {
+      if (shape.parentId && drop.has(shape.parentId) && !drop.has(shape.id)) {
+        drop.add(shape.id);
+        grew = true;
+      }
+    }
+  }
+  return shapes.filter((shape) => !drop.has(shape.id));
 }

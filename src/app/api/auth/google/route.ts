@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const secret = process.env.AUTH_GOOGLE_SECRET;
   const url = new URL(request.url);
   if (!id || !secret) {
-    return NextResponse.redirect(new URL("/login?google=mock", url.origin));
+    return NextResponse.redirect(new URL("/login?error=google", url.origin));
   }
   const state = crypto.randomUUID();
   const redirectUri = new URL("/api/auth/google/callback", url.origin).toString();

@@ -4,15 +4,14 @@ import {
   ArrowClockwise,
   ArrowCounterClockwise,
   ArrowUp,
-  CaretDown,
-  CaretUp,
   ChatCircle,
   Check,
   Cursor,
   Export,
-  FileText,
+  FilePdf,
   FloppyDisk,
   PencilSimple,
+  Plus,
   Square,
   Stack,
   TextT,
@@ -22,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { call } from "@/api/client";
+import { FileCard, lessonCover } from "@/components/file-card";
 import { Panel, Shell, StateMessage } from "@/components/shell";
 import { snapshot, useSpace } from "@/components/space-store";
 import type { Board, LibraryDocument, Shape, Tool } from "@/lib/domain";
@@ -40,7 +40,7 @@ const tools: { id: Tool; label: string }[] = [
 export function SpaceHome() {
   const router = useRouter();
   const boards = useQuery({ queryKey: ["boards"], queryFn: () => call<{ boards: Board[] }>("/api/harness/boards") });
-  const [prompt, setPrompt] = useState("Make a short lesson on ecosystems.");
+  const [prompt, setPrompt] = useState("");
   const create = useMutation({
     mutationFn: () => call<{ boardId: string }>("/api/harness/boards", { method: "POST", body: { title: prompt.slice(0, 48), prompt } }),
     onSuccess: (result) => router.push(`/space/${result.boardId}`),
@@ -68,18 +68,12 @@ export function SpaceHome() {
           />
           <div className="mt-2 flex items-center">
             <span className="px-1.5 text-[13px] text-muted">{LOCAL_MODEL}</span>
-            <button className="ml-auto h-9 rounded-full bg-primary px-4 text-[14px] font-medium text-primary-ink hover:bg-primary-hover" type="submit">
+            <button className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] font-medium text-primary-ink hover:bg-primary-hover disabled:bg-soft disabled:text-muted" type="submit" disabled={!prompt.trim() || create.isPending}>
+              <Plus size={16} />
               Make a board
             </button>
           </div>
         </form>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {["Turn the ecosystems page into slides", "Draft a lab safety frame"].map((item) => (
-            <button key={item} className="h-9 rounded-full border border-line px-3.5 text-[14px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={() => setPrompt(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
         <h2 className="mb-3 mt-10 text-[13px] font-medium text-muted">Boards</h2>
         {boards.isLoading ? <p className="text-[14px] text-muted" role="status">Loading boards</p> : null}
         {boards.isError ? <StateMessage title="Boards unavailable" body="Try again." onRetry={() => void boards.refetch()} /> : null}
@@ -147,16 +141,20 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
   const removeSelected = useSpace((state) => state.removeSelected);
   const undo = useSpace((state) => state.undo);
   const redo = useSpace((state) => state.redo);
-  const reorder = useSpace((state) => state.reorder);
   const updateBoard = useSpace((state) => state.updateBoard);
   const [tab, setTab] = useState<"agent" | "library" | "layers">("agent");
-  const [narrow, setNarrow] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [phone, setPhone] = useState(false);
   const [mobilePane, setMobilePane] = useState<"agent" | "canvas" | "inspector">("canvas");
   const [cam, setCam] = useState({ x: 48, y: 48, z: 1 });
   const [prompt, setPrompt] = useState("");
   const [saved, setSaved] = useState(false);
   const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null;
   const stageRef = useRef<HTMLElement>(null);
+  const camRef = useRef(cam);
+  useEffect(() => {
+    camRef.current = cam;
+  }, [cam]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -182,24 +180,85 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
   }, []);
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 767px)");
-    const apply = () => setNarrow(media.matches);
+    const stage = stageRef.current;
+    if (!stage) return;
+    function zoomAbout(clientX: number, clientY: number, nextZ: number) {
+      const rect = stage!.getBoundingClientRect();
+      const current = camRef.current;
+      const z = Math.min(2, Math.max(0.25, nextZ));
+      const ox = clientX - rect.left;
+      const oy = clientY - rect.top;
+      const ratio = z / current.z;
+      const next = { z, x: ox - (ox - current.x) * ratio, y: oy - (oy - current.y) * ratio };
+      camRef.current = next;
+      setCam(next);
+    }
+    function onWheel(event: WheelEvent) {
+      event.preventDefault();
+      const current = camRef.current;
+      if (event.ctrlKey) {
+        zoomAbout(event.clientX, event.clientY, current.z * Math.exp(-event.deltaY * 0.01));
+        return;
+      }
+      const next = { ...current, x: current.x - event.deltaX, y: current.y - event.deltaY };
+      camRef.current = next;
+      setCam(next);
+    }
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, []);
+
+  function zoomBy(delta: number) {
+    const stage = stageRef.current;
+    const rect = stage?.getBoundingClientRect();
+    const current = camRef.current;
+    const z = Math.min(2, Math.max(0.25, Math.round((current.z + delta) * 10) / 10));
+    if (!rect) {
+      setCam({ ...current, z });
+      return;
+    }
+    const clientX = rect.left + rect.width / 2;
+    const clientY = rect.top + rect.height / 2;
+    const ox = clientX - rect.left;
+    const oy = clientY - rect.top;
+    const ratio = z / current.z;
+    const next = { z, x: ox - (ox - current.x) * ratio, y: oy - (oy - current.y) * ratio };
+    camRef.current = next;
+    setCam(next);
+  }
+
+  useEffect(() => {
+    const compactMedia = window.matchMedia("(max-width: 1023px)");
+    const phoneMedia = window.matchMedia("(max-width: 767px)");
+    const apply = () => {
+      setCompact(compactMedia.matches);
+      setPhone(phoneMedia.matches);
+    };
     apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
+    compactMedia.addEventListener("change", apply);
+    phoneMedia.addEventListener("change", apply);
+    return () => {
+      compactMedia.removeEventListener("change", apply);
+      phoneMedia.removeEventListener("change", apply);
+    };
   }, []);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const target = event.target;
       const typing = target instanceof HTMLElement && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+      const mod = event.metaKey || event.ctrlKey;
+      const key = event.key.toLowerCase();
+      const z = key === "z" || event.code === "KeyZ";
+      const y = key === "y" || event.code === "KeyY";
+      if (mod && !event.altKey && (z || y)) {
+        if (typing) return;
         event.preventDefault();
-        if (event.shiftKey) redo();
+        if ((z && event.shiftKey) || y) redo();
         else undo();
         return;
       }
-      if (typing || narrow) return;
+      if (typing || phone) return;
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         removeSelected();
@@ -214,9 +273,9 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
         remember(before);
       }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [board, narrow, patch, redo, remember, removeSelected, selected, undo]);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [board, phone, patch, redo, remember, removeSelected, selected, undo]);
 
   function addAt(kind: Shape["kind"], x: number, y: number, text = "New frame") {
     addShape({
@@ -252,7 +311,8 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
     }
     entries.push({ id: `log-${crypto.randomUUID().slice(0, 8)}`, kind: "note", text: "Draft-AI, teacher edit required." });
     if (revise && selected) {
-      patch(selected.id, { text: `${selected.text} Revised from the sample page.` });
+      const target = selected.kind === "frame" ? board.shapes.find((item) => item.parentId === selected.id && item.kind === "text") ?? selected : selected;
+      patch(target.id, { text: `${target.text} Revised from the library page.` });
       updateBoard({ log: entries });
     } else {
       addShape({
@@ -282,18 +342,19 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
   async function exportPptx() {
     const { default: PptxGenJS } = await import("pptxgenjs");
     const pptx = new PptxGenJS();
-    const frames = board.shapes.filter((shape) => shape.kind === "frame");
+    const frames = board.shapes.filter((shape) => shape.kind === "frame" && !shape.parentId);
     for (const shape of frames) {
       const slide = pptx.addSlide();
       slide.background = { color: "F7F7F5" };
-      slide.addText(shape.text, { x: 0.5, y: 1.4, w: 9, h: 2, fontSize: 28, color: "002D62", fontFace: "Arial" });
+      const copy = board.shapes.find((item) => item.parentId === shape.id && item.kind === "text")?.text || shape.text;
+      slide.addText(copy, { x: 0.5, y: 1.4, w: 9, h: 2, fontSize: 28, color: "002D62", fontFace: "Arial" });
     }
     await pptx.writeFile({ fileName: `${board.title}.pptx` });
   }
 
   return (
-    <div className="flex h-[calc(100dvh-48px)] min-h-[600px] flex-col md:h-dvh">
-      <header className="flex h-[52px] shrink-0 items-center gap-1.5 border-b border-line px-3">
+    <div className="flex h-[calc(100dvh-48px)] min-h-0 flex-col md:h-dvh md:min-h-[600px]">
+      <header className="flex min-h-[52px] shrink-0 flex-wrap items-center gap-1.5 border-b border-line px-3 py-1.5">
         <input
           className="h-8 min-w-0 flex-1 rounded-md bg-transparent px-2 text-[14px] font-medium hover:bg-soft/70 focus:bg-soft/70 focus-visible:outline-none"
           aria-label="Board title"
@@ -313,23 +374,23 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
             </button>
           ))}
         </div>
-        <button className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={() => setSaved(true)}>
-          <FloppyDisk size={16} /> {saved ? "Saved" : "Save"}
+        <button className="inline-flex h-11 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-secondary hover:bg-soft hover:text-ink sm:h-8" type="button" onClick={() => setSaved(true)}>
+          <FloppyDisk size={16} /> <span className="hidden sm:inline">{saved ? "Saved" : "Save"}</span>
         </button>
-        <button className="inline-flex h-8 items-center rounded-lg px-2.5 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={() => window.print()}>
-          PDF
+        <button className="inline-flex h-11 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-secondary hover:bg-soft hover:text-ink sm:h-8" type="button" onClick={() => window.print()}>
+          <FilePdf size={16} /> <span className="hidden sm:inline">PDF</span>
         </button>
-        <button className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-medium text-primary-ink hover:bg-primary-hover" type="button" onClick={() => void exportPptx()}>
-          <Export size={16} /> PPTX
+        <button className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-medium text-primary-ink hover:bg-primary-hover sm:h-8" type="button" onClick={() => void exportPptx()}>
+          <Export size={16} /> <span className="hidden sm:inline">PPTX</span>
         </button>
       </header>
       {saved ? <p className="sr-only" role="status">Saved</p> : null}
-      {narrow ? (
+      {compact ? (
         <div className="flex gap-0.5 border-b border-line p-1.5">
           {(["agent", "canvas", "inspector"] as const).map((pane) => (
             <button
               key={pane}
-              className={cn("h-8 flex-1 rounded-md text-[13px] capitalize", mobilePane === pane ? "bg-soft font-medium text-ink" : "text-secondary")}
+              className={cn("h-11 flex-1 rounded-md text-[13px] capitalize", mobilePane === pane ? "bg-soft font-medium text-ink" : "text-secondary")}
               type="button"
               aria-pressed={mobilePane === pane}
               onClick={() => setMobilePane(pane)}
@@ -339,9 +400,8 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
           ))}
         </div>
       ) : null}
-      {narrow ? <p className="px-4 py-2 text-[12px] text-muted">View only on a small screen. Editing stays on a wider window.</p> : null}
       <div className="grid min-h-0 flex-1 lg:grid-cols-[300px_minmax(0,1fr)_264px]">
-        <section className={cn("flex min-h-0 flex-col border-r border-line bg-sidebar", narrow && mobilePane !== "agent" && "hidden")}>
+        <section className={cn("flex min-h-0 flex-col border-r border-line bg-sidebar", compact && mobilePane !== "agent" && "hidden")}>
           <div className="flex gap-0.5 px-2 pt-2" role="tablist" aria-label="Side panel">
             {(
               [
@@ -386,7 +446,7 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
                 className="p-2.5"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  if (!narrow) void generate(false);
+                  void generate(false);
                 }}
               >
                 <div className="rounded-xl border border-line bg-panel px-2.5 pb-2 pt-2.5 focus-within:border-ink/25">
@@ -412,7 +472,6 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
                       className="ml-auto inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-ink hover:bg-primary-hover disabled:bg-soft disabled:text-muted"
                       type="submit"
                       aria-label="Draft section"
-                      disabled={narrow}
                     >
                       <ArrowUp size={14} weight="bold" />
                     </button>
@@ -422,53 +481,31 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
             </div>
           ) : null}
           {tab === "library" ? (
-            <ul className="space-y-px overflow-auto p-2">
-              {documents.map((doc) => (
+            <ul className="space-y-3 overflow-auto p-3">
+              {documents.map((doc, index) => (
                 <li key={doc.id}>
                   <button
-                    className="flex h-9 w-full cursor-grab items-center gap-2 rounded-lg px-2 text-left text-[13px] hover:bg-soft active:cursor-grabbing"
+                    className="w-full cursor-grab text-left active:cursor-grabbing"
                     type="button"
-                    draggable={!narrow}
+                    draggable={!phone}
                     title="Drag onto the canvas or click to add"
                     onDragStart={(event) => event.dataTransfer.setData("text/plain", doc.title)}
-                    onClick={() => !narrow && addAt("frame", 140, 160, doc.title)}
+                    onClick={() => addAt("frame", 140, 160, doc.title)}
                   >
-                    <FileText size={16} className="shrink-0 text-muted" />
-                    <span className="truncate">{doc.title}</span>
+                    <FileCard title={doc.title} preview={doc.title} image={lessonCover(index)} compact />
                   </button>
                 </li>
               ))}
             </ul>
           ) : null}
-          {tab === "layers" ? (
-            <ul className="space-y-px overflow-auto p-2">
-              {board.shapes.map((shape) => (
-                <li key={shape.id} className="group flex items-center rounded-lg hover:bg-soft/70">
-                  <button className={cn("flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-left text-[13px]", shape.id === selectedId && "bg-soft font-medium")} type="button" aria-label={`Layer ${shape.text || shape.kind}`} onClick={() => select(shape.id)}>
-                    <ToolIcon tool={shape.kind === "rect" ? "rect" : shape.kind === "text" ? "text" : shape.kind === "comment" ? "comment" : shape.kind === "draw" ? "draw" : "frame"} size={14} />
-                    <span className="truncate">{shape.text.slice(0, 32) || shape.kind}</span>
-                  </button>
-                  <button className="inline-flex size-7 items-center justify-center rounded-md text-muted hover:text-ink" type="button" aria-label={`Move ${shape.text} up`} onClick={() => reorder(shape.id, -1)}>
-                    <CaretUp size={12} />
-                  </button>
-                  <button className="inline-flex size-7 items-center justify-center rounded-md text-muted hover:text-ink" type="button" aria-label={`Move ${shape.text} down`} onClick={() => reorder(shape.id, 1)}>
-                    <CaretDown size={12} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          {tab === "layers" ? <LayerTree shapes={board.shapes} selectedId={selectedId} onSelect={select} /> : null}
         </section>
-        <section ref={stageRef} className={cn("relative min-h-[480px] overflow-hidden bg-root", narrow && mobilePane !== "canvas" && "hidden")} aria-label="Canvas">
+        <section ref={stageRef} className={cn("relative min-h-[480px] overflow-hidden bg-root", compact && mobilePane !== "canvas" && "hidden")} aria-label="Canvas">
           <div
             className="dots absolute inset-0"
-            onWheel={(event) => {
-              event.preventDefault();
-              setCam((current) => ({ ...current, z: Math.min(2, Math.max(0.4, current.z + (event.deltaY > 0 ? -0.05 : 0.05))) }));
-            }}
             onPointerDown={(event) => {
               if (event.target !== event.currentTarget) return;
-              if (narrow) return;
+              if (phone) return;
               if (tool !== "select" && tool !== "draw") {
                 const rect = event.currentTarget.getBoundingClientRect();
                 addAt(tool === "rect" ? "rect" : tool === "text" ? "text" : tool === "comment" ? "comment" : "frame", (event.clientX - rect.left - cam.x) / cam.z, (event.clientY - rect.top - cam.y) / cam.z);
@@ -489,19 +526,28 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
               event.preventDefault();
-              if (narrow) return;
+              if (phone) return;
               const rect = event.currentTarget.getBoundingClientRect();
               addAt("frame", (event.clientX - rect.left - cam.x) / cam.z, (event.clientY - rect.top - cam.y) / cam.z, event.dataTransfer.getData("text/plain") || "Source");
             }}
           >
             <div style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.z})`, transformOrigin: "0 0" }}>
-              {(board.mode === "slides" ? board.shapes.filter((shape) => shape.kind === "frame") : board.shapes).map((shape, index) => (
-                <ShapeView key={shape.id} shape={board.mode === "slides" ? { ...shape, x: 40 + index * 700, y: 40, w: 640, h: 360 } : shape} locked={narrow} />
+              {(board.mode === "slides" ? board.shapes.filter((shape) => shape.kind === "frame" && !shape.parentId) : board.shapes.filter((shape) => !shape.parentId)).map((shape, index) => (
+                <ShapeView key={shape.id} zoom={cam.z} shape={board.mode === "slides" ? { ...shape, x: 40 + index * 700, y: 40, w: 640, h: 360 } : shape} locked={phone} />
               ))}
             </div>
           </div>
-          <p className="pointer-events-none absolute left-4 top-3 text-[12px] text-muted">Draft-AI, teacher edit required</p>
-          <p className="pointer-events-none absolute bottom-5 right-4 rounded-md bg-panel/80 px-1.5 py-0.5 text-[11px] tabular-nums text-muted">{Math.round(cam.z * 100)}%</p>
+          <div className="absolute bottom-5 right-4 flex items-center gap-0.5 rounded-lg bg-elevated p-0.5 shadow-pop">
+            <button className="inline-flex size-7 items-center justify-center rounded-md text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Zoom out" onClick={() => zoomBy(-0.1)}>
+              −
+            </button>
+            <button className="h-7 rounded-md px-1.5 text-[11px] tabular-nums text-muted hover:bg-soft hover:text-ink" type="button" aria-label="Reset zoom" onClick={() => zoomBy(1 - cam.z)}>
+              {Math.round(cam.z * 100)}%
+            </button>
+            <button className="inline-flex size-7 items-center justify-center rounded-md text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Zoom in" onClick={() => zoomBy(0.1)}>
+              +
+            </button>
+          </div>
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-xl bg-elevated p-1 shadow-pop" role="toolbar" aria-label="Canvas tools">
             {tools.map((item) => (
               <button
@@ -517,63 +563,99 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
               </button>
             ))}
             <span className="mx-1 h-5 w-px bg-line" aria-hidden />
-            <button className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Undo" title="Undo  ⌘Z" onClick={undo}>
+            <button className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Undo" title="Undo  ⌘Z or Ctrl+Z" onClick={undo}>
               <ArrowCounterClockwise size={18} />
             </button>
-            <button className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Redo" title="Redo  ⇧⌘Z" onClick={redo}>
+            <button className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft hover:text-ink" type="button" aria-label="Redo" title="Redo  ⇧⌘Z or Ctrl+Y" onClick={redo}>
               <ArrowClockwise size={18} />
             </button>
           </div>
         </section>
-        <aside className={cn("overflow-y-auto border-l border-line bg-sidebar", narrow && mobilePane !== "inspector" && "hidden")}>
+        <aside className={cn("overflow-y-auto border-l border-line bg-sidebar", compact && mobilePane !== "inspector" && "hidden")}>
           <h2 className="px-4 pb-1 pt-4 text-[13px] font-medium">Inspector</h2>
           {selected ? (
             <div className="text-[12px] text-muted">
-              <InspectorGroup title="Text">
+              <p className="px-4 pt-3 text-[13px] font-medium text-ink">{layerName(selected)}</p>
+              {selected.kind === "text" || selected.kind === "comment" ? (
+                <>
+                  <InspectorGroup title="Text">
+                    <label className="block">
+                      <span className="sr-only">Text</span>
+                      <textarea aria-label="Text" className={cn(inspectorField, "min-h-16 py-1.5 leading-5")} value={selected.text} onChange={(event) => patch(selected.id, { text: event.target.value })} />
+                    </label>
+                  </InspectorGroup>
+                  <InspectorGroup title="Typography">
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block">
+                        Size
+                        <input className={cn(inspectorField, "mt-1 tabular-nums")} type="number" value={selected.fontSize} onChange={(event) => patch(selected.id, { fontSize: Number(event.target.value) })} />
+                      </label>
+                      <label className="block">
+                        Weight
+                        <select className={cn(inspectorField, "mt-1")} value={selected.fontWeight} onChange={(event) => patch(selected.id, { fontWeight: Number(event.target.value) as 400 | 600 | 700 })}>
+                          <option value={400}>Regular</option>
+                          <option value={600}>Semibold</option>
+                          <option value={700}>Bold</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label className="mt-2 block">
+                      Align
+                      <select className={cn(inspectorField, "mt-1")} value={selected.align} onChange={(event) => patch(selected.id, { align: event.target.value as Shape["align"] })}>
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                      </select>
+                    </label>
+                    <ColorField label="Color" value={selected.color.startsWith("#") ? selected.color : "#26251e"} onChange={(value) => patch(selected.id, { color: value })} />
+                  </InspectorGroup>
+                </>
+              ) : null}
+              {selected.image && !selected.text ? (
+                <InspectorGroup title="Picture">
+                  <label className="inline-flex h-8 cursor-pointer items-center rounded-lg border border-line bg-panel px-2.5 text-[13px] text-ink hover:bg-soft">
+                    Replace picture
+                    <input
+                      className="sr-only"
+                      aria-label="Replace picture"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (!file) return;
+                        const before = snapshot(board);
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          patch(selected.id, { image: String(reader.result) });
+                          remember(before);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </InspectorGroup>
+              ) : null}
+              {selected.kind === "frame" || (selected.kind === "rect" && !selected.image) ? (
+                <InspectorGroup title="Fill">
+                  <ColorField label="Fill" value={selected.fill.startsWith("#") ? selected.fill : "#ffffff"} onChange={(value) => patch(selected.id, { fill: value })} />
+                </InspectorGroup>
+              ) : null}
+              <InspectorGroup title="Effects">
                 <label className="block">
-                  <span className="sr-only">Text</span>
-                  <textarea aria-label="Text" className={cn(inspectorField, "min-h-16 py-1.5 leading-5")} value={selected.text} onChange={(event) => patch(selected.id, { text: event.target.value })} />
-                </label>
-              </InspectorGroup>
-              <InspectorGroup title="Typography">
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block">
-                    Size
-                    <input className={cn(inspectorField, "mt-1 tabular-nums")} type="number" value={selected.fontSize} onChange={(event) => patch(selected.id, { fontSize: Number(event.target.value) })} />
-                  </label>
-                  <label className="block">
-                    Weight
-                    <select className={cn(inspectorField, "mt-1")} value={selected.fontWeight} onChange={(event) => patch(selected.id, { fontWeight: Number(event.target.value) as 400 | 600 | 700 })}>
-                      <option value={400}>Regular</option>
-                      <option value={600}>Semibold</option>
-                      <option value={700}>Bold</option>
-                    </select>
-                  </label>
-                </div>
-                <label className="mt-2 block">
-                  Align
-                  <select className={cn(inspectorField, "mt-1")} value={selected.align} onChange={(event) => patch(selected.id, { align: event.target.value as Shape["align"] })}>
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                  </select>
-                </label>
-              </InspectorGroup>
-              <InspectorGroup title="Fill">
-                <ColorField label="Text color" value={selected.color} onChange={(value) => patch(selected.id, { color: value })} />
-                <ColorField label="Fill" value={selected.fill} onChange={(value) => patch(selected.id, { fill: value })} />
-                <label className="mt-2 block">
                   <span className="flex justify-between">
                     Opacity <span className="tabular-nums text-ink">{Math.round(selected.opacity * 100)}%</span>
                   </span>
                   <input className="mt-1.5 w-full accent-[var(--text-primary)]" type="range" min={0.2} max={1} step={0.05} value={selected.opacity} onChange={(event) => patch(selected.id, { opacity: Number(event.target.value) })} />
                 </label>
               </InspectorGroup>
-              <div className="p-4">
-                <button className="h-8 w-full rounded-lg border border-line bg-panel text-[13px] text-ink hover:bg-soft disabled:text-muted" type="button" onClick={() => void generate(true)} disabled={!selected || narrow}>
-                  Revise this section
-                </button>
-              </div>
+              {selected.kind === "text" || selected.kind === "frame" ? (
+                <div className="p-4">
+                  <button className="h-11 w-full rounded-lg border border-line bg-panel text-[13px] text-ink hover:bg-soft sm:h-8" type="button" onClick={() => void generate(true)}>
+                    Revise this section
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <p className="px-4 pt-2 text-[13px] text-muted">Select an object on the canvas to edit it.</p>
@@ -585,7 +667,7 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
           .filter((shape) => shape.kind === "frame")
           .map((shape) => (
             <article key={shape.id} className="mb-6 p-8">
-              <h1 className="text-3xl text-[#002d62]">{shape.text}</h1>
+              <h1 className="text-3xl text-[#002d62]">{board.shapes.find((item) => item.parentId === shape.id && item.kind === "text")?.text || shape.text}</h1>
             </article>
           ))}
       </div>
@@ -593,22 +675,49 @@ function Canvas({ documents }: { documents: LibraryDocument[] }) {
   );
 }
 
-function ShapeView({ shape, locked }: { shape: Shape; locked: boolean }) {
+function ShapeView({ shape, locked, zoom }: { shape: Shape; locked: boolean; zoom: number }) {
   const select = useSpace((state) => state.select);
   const patch = useSpace((state) => state.patch);
   const remember = useSpace((state) => state.remember);
   const board = useSpace((state) => state.board);
   const selected = useSpace((state) => state.selectedId) === shape.id;
+  const children = board?.shapes.filter((item) => item.parentId === shape.id) ?? [];
+  const textLike = shape.kind === "text" || shape.kind === "comment";
+  const picture = Boolean(shape.image) && !shape.text;
+  const [editing, setEditing] = useState(false);
+  const beforeEdit = useRef<ReturnType<typeof snapshot> | null>(null);
+  useEffect(() => {
+    if (!selected) setEditing(false);
+  }, [selected]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const scale = zoom || 1;
+
+  function startTextEdit() {
+    if (shape.kind === "draw") return;
+    if (board) beforeEdit.current = snapshot(board);
+    setEditing(true);
+  }
+
+  function finishTextEdit(next: string) {
+    setEditing(false);
+    const before = beforeEdit.current;
+    beforeEdit.current = null;
+    const prior = before?.shapes.find((item) => item.id === shape.id);
+    if (before && prior && prior.text !== next) remember(before);
+  }
+
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={shape.text || shape.kind}
+      role={editing ? "group" : "button"}
+      tabIndex={editing ? -1 : 0}
+      aria-label={picture ? "Picture" : (shape.text || (shape.kind === "frame" ? "Frame" : shape.kind)).split("\n")[0]}
       aria-pressed={selected}
       className={cn(
-        "absolute overflow-hidden border p-3 text-left",
-        shape.kind === "frame" && "shadow-[0_1px_2px_rgb(38_37_30/6%),0_6px_20px_-10px_rgb(38_37_30/18%)]",
-        selected && "outline outline-2 outline-offset-2 outline-[#3b82f6]",
+        "absolute border text-left",
+        shape.kind === "frame" ? "overflow-visible shadow-[0_1px_2px_rgb(38_37_30/6%),0_6px_20px_-10px_rgb(38_37_30/18%)]" : selected ? "overflow-visible" : "overflow-hidden",
+        selected && "outline outline-2 outline-[#3b82f6]",
+        !selected && over && shape.kind !== "frame" && "outline outline-1 outline-[#3b82f6]",
       )}
       style={{
         left: shape.x,
@@ -623,19 +732,27 @@ function ShapeView({ shape, locked }: { shape: Shape; locked: boolean }) {
         opacity: shape.opacity,
         borderRadius: shape.radius,
         borderColor: shape.stroke,
-        pointerEvents: locked ? "none" : "auto",
+        zIndex: selected ? 2 : 1,
       }}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        if (picture) fileRef.current?.click();
+        else if (textLike) startTextEdit();
+      }}
+      onPointerEnter={() => setOver(true)}
+      onPointerLeave={() => setOver(false)}
       onPointerDown={(event) => {
-        if (locked) return;
+        if (editing) return;
         event.stopPropagation();
         select(shape.id);
-        if (!board) return;
+        if (locked || !board) return;
         const before = snapshot(board);
         const start = { x: event.clientX, y: event.clientY, sx: shape.x, sy: shape.y };
         let moved = false;
         function move(ev: PointerEvent) {
           moved = true;
-          patch(shape.id, { x: start.sx + ev.clientX - start.x, y: start.sy + ev.clientY - start.y });
+          patch(shape.id, { x: start.sx + (ev.clientX - start.x) / scale, y: start.sy + (ev.clientY - start.y) / scale });
         }
         function up() {
           if (moved) remember(before);
@@ -646,31 +763,134 @@ function ShapeView({ shape, locked }: { shape: Shape; locked: boolean }) {
         window.addEventListener("pointerup", up);
       }}
     >
-      {shape.kind === "draw" ? <span className="text-xs">Drawing</span> : shape.text}
-      {selected && !locked ? (
-        <span
-          className="absolute bottom-0 right-0 size-11 cursor-se-resize"
-          aria-label={`Resize ${shape.text}`}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-            if (!board) return;
+      {shape.kind === "frame" ? children.map((child) => <ShapeView key={child.id} zoom={zoom} shape={child} locked={locked} />) : null}
+      {picture ? <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${shape.image})` }} aria-hidden /> : null}
+      {picture ? (
+        <input
+          ref={fileRef}
+          className="sr-only"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          aria-label="Replace picture"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (!file || !board) return;
             const before = snapshot(board);
-            const start = { x: event.clientX, y: event.clientY, w: shape.w, h: shape.h };
-            function move(ev: PointerEvent) {
-              patch(shape.id, { w: Math.max(80, start.w + ev.clientX - start.x), h: Math.max(48, start.h + ev.clientY - start.y) });
-            }
-            function up() {
+            const reader = new FileReader();
+            reader.onload = () => {
+              patch(shape.id, { image: String(reader.result) });
               remember(before);
-              window.removeEventListener("pointermove", move);
-              window.removeEventListener("pointerup", up);
-            }
-            window.addEventListener("pointermove", move);
-            window.addEventListener("pointerup", up);
+            };
+            reader.readAsDataURL(file);
           }}
         />
       ) : null}
+      {textLike && editing ? (
+        <textarea
+          autoFocus
+          aria-label={`Edit ${(shape.text || "Text").split("\n")[0]}`}
+          className="h-full w-full resize-none bg-transparent p-0 focus-visible:outline-none"
+          value={shape.text}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => patch(shape.id, { text: event.target.value })}
+          onBlur={(event) => finishTextEdit(event.target.value)}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+            if (event.key === "Escape") event.currentTarget.blur();
+          }}
+        />
+      ) : null}
+      {textLike && !editing ? <div className="pointer-events-none whitespace-pre-wrap">{shape.text}</div> : null}
+      {shape.kind === "draw" ? <div className="pointer-events-none">Drawing</div> : null}
+      {selected && !locked && !editing
+        ? (["nw", "ne", "sw", "se"] as const).map((corner) => (
+            <span
+              key={corner}
+              className={cn(
+                "absolute z-10 size-3 rounded-[2px] border-2 border-[#3b82f6] bg-white",
+                corner === "nw" && "-left-1.5 -top-1.5 cursor-nwse-resize",
+                corner === "ne" && "-right-1.5 -top-1.5 cursor-nesw-resize",
+                corner === "sw" && "-left-1.5 -bottom-1.5 cursor-nesw-resize",
+                corner === "se" && "-right-1.5 -bottom-1.5 cursor-nwse-resize",
+              )}
+              aria-label={`Resize ${layerName(shape)}`}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                if (!board) return;
+                const before = snapshot(board);
+                const start = { x: event.clientX, y: event.clientY, sx: shape.x, sy: shape.y, w: shape.w, h: shape.h };
+                function move(ev: PointerEvent) {
+                  const dx = (ev.clientX - start.x) / scale;
+                  const dy = (ev.clientY - start.y) / scale;
+                  const next = { x: start.sx, y: start.sy, w: start.w, h: start.h };
+                  if (corner === "ne" || corner === "se") next.w = Math.max(48, start.w + dx);
+                  if (corner === "sw" || corner === "se") next.h = Math.max(32, start.h + dy);
+                  if (corner === "nw" || corner === "sw") {
+                    next.w = Math.max(48, start.w - dx);
+                    next.x = start.sx + start.w - next.w;
+                  }
+                  if (corner === "nw" || corner === "ne") {
+                    next.h = Math.max(32, start.h - dy);
+                    next.y = start.sy + start.h - next.h;
+                  }
+                  patch(shape.id, next);
+                }
+                function up() {
+                  remember(before);
+                  window.removeEventListener("pointermove", move);
+                  window.removeEventListener("pointerup", up);
+                }
+                window.addEventListener("pointermove", move);
+                window.addEventListener("pointerup", up);
+              }}
+            />
+          ))
+        : null}
     </div>
   );
+}
+
+function layerName(shape: Shape) {
+  if (shape.image && !shape.text) return "Picture";
+  if (shape.kind === "frame") return "Frame";
+  if (shape.kind === "text" || shape.kind === "comment") return shape.text.split("\n")[0] || "Text";
+  if (shape.kind === "draw") return "Drawing";
+  return shape.kind;
+}
+
+function layerTool(shape: Shape): Tool {
+  if (shape.image && !shape.text) return "rect";
+  if (shape.kind === "text") return "text";
+  if (shape.kind === "comment") return "comment";
+  if (shape.kind === "draw") return "draw";
+  if (shape.kind === "rect") return "rect";
+  return "frame";
+}
+
+function LayerTree({ shapes, selectedId, onSelect }: { shapes: Shape[]; selectedId: string | null; onSelect: (id: string) => void }) {
+  const roots = shapes.filter((shape) => !shape.parentId);
+  function render(shape: Shape, depth: number) {
+    const kids = shapes.filter((item) => item.parentId === shape.id);
+    const name = layerName(shape);
+    return (
+      <li key={shape.id}>
+        <button
+          type="button"
+          aria-label={`Layer ${name}`}
+          aria-pressed={shape.id === selectedId}
+          className={cn("flex h-8 w-full min-w-0 items-center gap-2 rounded-md pr-2 text-left text-[13px] text-ink hover:bg-soft/70", shape.id === selectedId && "bg-soft")}
+          style={{ paddingLeft: 8 + depth * 12 }}
+          onClick={() => onSelect(shape.id)}
+        >
+          <ToolIcon tool={layerTool(shape)} size={14} />
+          <span className="truncate">{name}</span>
+        </button>
+        {kids.length ? <ul>{kids.map((child) => render(child, depth + 1))}</ul> : null}
+      </li>
+    );
+  }
+  return <ul className="m-0 list-none overflow-auto p-1">{roots.map((shape) => render(shape, 0))}</ul>;
 }
 
 function ToolIcon({ tool, size = 18 }: { tool: Tool; size?: number }) {

@@ -21,9 +21,9 @@ function frame(partial: Partial<Shape> & Pick<Shape, "id" | "text" | "x" | "y">)
 }
 
 const tasks: EvalTask[] = [
-  ["Find the lab rule from the paper packet.", "Find the lab rule with Harness."],
-  ["List three ecosystem roles from the packet.", "List three ecosystem roles with Harness."],
-  ["Check which attendance memo is current.", "Check the current attendance memo with Harness."],
+  ["Find the lab rule from the paper packet.", "Find the lab rule with Tabi."],
+  ["List three ecosystem roles from the packet.", "List three ecosystem roles with Tabi."],
+  ["Check which attendance memo is current.", "Check the current attendance memo with Tabi."],
   ["Draft a slide title from the packet.", "Draft a slide title in Space."],
   ["Fill the leave date on the paper form.", "Fill the leave date on the screen form."],
 ].flatMap(([baseline, harness], index): EvalTask[] => {
@@ -34,14 +34,14 @@ const tasks: EvalTask[] = [
       pair,
       arm: "baseline",
       title: `Pair ${pair}, paper`,
-      prompt: `${baseline} Placeholder until the task sheet is approved.`,
+      prompt: baseline,
     },
     {
       id: `task-${pair}-harness`,
       pair,
       arm: "harness",
-      title: `Pair ${pair}, Harness`,
-      prompt: `${harness} Placeholder until the task sheet is approved.`,
+      title: `Pair ${pair}, Tabi`,
+      prompt: harness,
     },
   ];
 });
@@ -483,14 +483,14 @@ export function createSeed(): DB {
     boards: [
       {
         id: "board-ecosystems",
-        title: "Grade 7 Ecosystems (sample)",
+        title: "Show, don't tell",
         ownerId: "user-faculty",
         institutionId: "inst-sample",
         mode: "slides",
-        prompt: "Make a short lesson on ecosystems.",
+        prompt: "A grade 7 writing lesson on showing instead of telling.",
         updatedAt: now,
         log: [
-          { id: "log-1", kind: "user", text: "Make a short lesson on ecosystems.", at: now },
+          { id: "log-1", kind: "user", text: "A grade 7 writing lesson on showing instead of telling.", at: now },
           { id: "log-2", kind: "step", label: "Read source", state: "done" },
           { id: "log-3", kind: "step", label: "Draft section", state: "done" },
           { id: "log-4", kind: "step", label: "Cite page", state: "done" },
@@ -498,20 +498,16 @@ export function createSeed(): DB {
           { id: "log-6", kind: "note", text: "Draft-AI, teacher edit required." },
         ],
         shapes: [
-          frame({
-            id: "shape-title",
-            text: "Grade 7 Ecosystems",
-            x: 80,
-            y: 80,
-          }),
-          frame({
-            id: "shape-roles",
-            text: "Producers, consumers, and decomposers.",
-            x: 760,
-            y: 80,
-            fontSize: 22,
-            fontWeight: 400,
-          }),
+          frame({ id: "shape-title", text: "Show, don't tell\nA grade 7 writing lesson", x: 80, y: 80, fill: "#26251e", color: "#f7f7f4", image: "/lesson/lesson-notebook.jpg" }),
+          frame({ id: "shape-tell", text: "Telling names the feeling\n\"She was sad.\"\nThe reader is told. They see nothing.", x: 800, y: 80, fontSize: 22, fontWeight: 400 }),
+          frame({ id: "shape-show", text: "Showing gives the camera\n\"She pushed the peas around her plate and would not look up.\"", x: 1520, y: 80, fontSize: 22, fontWeight: 400 }),
+          frame({ id: "shape-camera", text: "Write what a camera would catch\nOne object. One action.\nNo emotion word.", x: 2240, y: 80, fontSize: 22, fontWeight: 400, fill: "#f7f7f4", image: "/lesson/lesson-books.jpg" }),
+          frame({ id: "shape-senses", text: "Use two senses\nSight, sound, smell, taste, touch.\nPick two for one sentence.", x: 2960, y: 80, fontSize: 22, fontWeight: 400 }),
+          frame({ id: "shape-practice", text: "Practice\nRewrite: \"The room was messy.\"\nName three things on the floor.", x: 3680, y: 80, fontSize: 22, fontWeight: 400, fill: "#f6e7a8" }),
+          frame({ id: "shape-picture", text: "Put the sentence next to a picture\nIf the picture already says it, cut the sentence.", x: 4400, y: 80, fontSize: 22, fontWeight: 400, image: "/lesson/lesson-desk.jpg" }),
+          frame({ id: "shape-dialogue", text: "Dialogue can show character\n\"I'm fine,\" she said, and shut the book.", x: 5120, y: 80, fontSize: 22, fontWeight: 400 }),
+          frame({ id: "shape-check", text: "Before you hand it in\nA camera could film it.\nTwo senses.\nNo word like sad, angry, or happy.", x: 5840, y: 80, fontSize: 20, fontWeight: 400 }),
+          frame({ id: "shape-exit", text: "Exit ticket\nRewrite one telling sentence from your draft before the bell.", x: 6560, y: 80, fill: "#26251e", color: "#f7f7f4", fontSize: 24 }),
         ],
       },
     ],
@@ -520,6 +516,8 @@ export function createSeed(): DB {
         id: "form-leave",
         title: "Leave form (sample)",
         sourceLabel: "Scanned leave form",
+        sourceFile: "/lesson/leave.pdf",
+        sourcePreview: "/lesson/leave.png",
         ownerId: "user-faculty",
         updatedAt: now,
         signature: null,

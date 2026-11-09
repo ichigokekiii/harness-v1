@@ -1,11 +1,21 @@
 "use client";
 
+import { Check, DownloadSimple, FastForward, Hourglass, Play } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { call } from "@/api/client";
+import { FileCard } from "@/components/file-card";
 import { Panel, Shell } from "@/components/shell";
 import type { EvalAttempt, EvalTask } from "@/lib/domain";
+
+function outcomeDetail(attempt: EvalAttempt | undefined, live: boolean, elapsed: number) {
+  if (live) return `Running, ${elapsed}s`;
+  if (!attempt || attempt.outcome === "pending") return "Pending";
+  if (attempt.outcome === "success") return attempt.score === null ? "Success" : `Success, score ${attempt.score}`;
+  if (attempt.outcome === "skip") return "Skipped, no score";
+  return "Timed out, no score";
+}
 
 export function EvalScreen() {
   const client = useQueryClient();
@@ -41,42 +51,33 @@ export function EvalScreen() {
     save.mutate(next);
   }
   const elapsed = running ? Math.round((now - started) / 1000) : 0;
+  const tasks = query.data?.tasks ?? [];
   return (
     <Shell>
       <Panel
         title="Eval"
         action={
-          <Link className="inline-flex min-h-9 items-center rounded-control border border-line px-3 text-sm" href="/api/harness/eval/export">
+          <Link className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm" href="/api/harness/eval/export">
+            <DownloadSimple size={16} />
             Export CSV
           </Link>
         }
       >
-        <label className="mb-4 block max-w-sm text-sm">
+        <label className="mb-6 block max-w-sm text-sm">
           Participant id, optional
           <input className="mt-1 min-h-9 w-full rounded-control border border-line bg-panel px-3" value={participant} onChange={(event) => setParticipant(event.target.value)} />
         </label>
-        {running ? <p role="status" className="mb-3 text-sm">Timer {elapsed}s</p> : null}
-        <ul className="divide-y divide-line overflow-hidden rounded-panel border border-line bg-panel">
-          {(query.data?.tasks ?? []).map((task) => {
+        {running ? <p role="status" className="sr-only">{`Timer ${elapsed} seconds`}</p> : null}
+        <ul className="grid gap-x-5 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
+          {tasks.map((task) => {
             const attempt = attempts.find((item) => item.taskId === task.id);
             const live = running === task.id;
             return (
-              <li key={task.id} className={live ? "flex flex-wrap items-center gap-x-6 gap-y-3 bg-soft/60 px-4 py-3.5" : "flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3.5"}>
-                <div className="min-w-0 flex-1 basis-80">
-                  <p className="text-sm font-medium">
-                    {task.title}
-                    <span className="ml-2 inline-flex rounded-full bg-soft px-2 py-0.5 align-middle text-[11px] font-normal text-secondary">
-                      {attempt?.outcome ?? "pending"}
-                      {attempt?.outcome === "success" && attempt.score !== null ? `, score ${attempt.score}` : ""}
-                      {attempt?.outcome === "skip" || attempt?.outcome === "timeout" ? ", no score" : ""}
-                    </span>
-                  </p>
-                  <p className="mt-0.5 text-[13px] text-secondary">{task.prompt}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  {live ? <span className="mr-2 text-[13px] tabular-nums text-ink">{elapsed}s</span> : null}
+              <li key={task.id} className="min-w-0">
+                <FileCard title={task.title} detail={outcomeDetail(attempt, live, elapsed)} preview={task.prompt} />
+                <div className="mt-2 flex flex-wrap items-center gap-1 px-0.5">
                   <button
-                    className="h-8 rounded-lg bg-primary px-3 text-[13px] font-medium text-primary-ink hover:bg-primary-hover"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-secondary hover:bg-soft hover:text-ink"
                     type="button"
                     onClick={(event) => {
                       setRunning(task.id);
@@ -84,13 +85,21 @@ export function EvalScreen() {
                       setNow(event.timeStamp);
                     }}
                   >
+                    <Play size={15} />
                     Start
                   </button>
-                  {(["success", "skip", "timeout"] as const).map((outcome) => (
-                    <button key={outcome} className="h-8 rounded-lg px-2.5 text-[13px] capitalize text-secondary hover:bg-soft hover:text-ink" type="button" onClick={(event) => finish(task.id, outcome, event.timeStamp)}>
-                      {outcome}
-                    </button>
-                  ))}
+                  <button className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={(event) => finish(task.id, "success", event.timeStamp)}>
+                    <Check size={15} />
+                    Success
+                  </button>
+                  <button className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={(event) => finish(task.id, "skip", event.timeStamp)}>
+                    <FastForward size={15} />
+                    Skip
+                  </button>
+                  <button className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] text-secondary hover:bg-soft hover:text-ink" type="button" onClick={(event) => finish(task.id, "timeout", event.timeStamp)}>
+                    <Hourglass size={15} />
+                    Timeout
+                  </button>
                 </div>
               </li>
             );

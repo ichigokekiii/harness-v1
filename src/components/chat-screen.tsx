@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { call } from "@/api/client";
+import { FileCard } from "@/components/file-card";
 import { Shell } from "@/components/shell";
 import { LOCAL_MODEL } from "@/lib/model";
 import type { ChatMessage, Health, Thread } from "@/lib/domain";
@@ -12,13 +13,6 @@ import { cn } from "@/lib/cn";
 
 type ThreadResponse = { thread: Thread; health: Health };
 type Citation = NonNullable<ChatMessage["citations"]>[number];
-
-const suggestions = [
-  ["What should Grade 7 study about ecosystems?", "Grade 7 ecosystems"],
-  ["When do lab hours end?", "Lab hours disagree"],
-  ["What does the attendance memo say?", "Old attendance memo"],
-  ["What is the school bus schedule?", "Missing bus schedule"],
-] as const;
 
 export function ChatHome() {
   return (
@@ -97,18 +91,6 @@ function ChatColumn({ threadId }: { threadId?: string }) {
               <h1 className="mb-7 text-balance text-center text-[28px] font-normal tracking-[-0.02em]">What are we teaching today?</h1>
               {modelDown ? <OfflineNote onRestore={() => offline.mutate("up")} /> : null}
               {composer}
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {suggestions.map(([prompt, label]) => (
-                  <button
-                    key={label}
-                    className="h-9 rounded-full border border-line px-3.5 text-[14px] text-secondary transition-colors hover:bg-soft hover:text-ink"
-                    type="button"
-                    onClick={() => ask.mutate(prompt)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         ) : (
@@ -134,11 +116,10 @@ function ChatColumn({ threadId }: { threadId?: string }) {
                 )}
               </div>
             </div>
-            <div className="shrink-0 bg-root px-4 md:px-6">
+            <div className="shrink-0 bg-root px-4 pb-4 md:px-6">
               <div className="mx-auto w-full max-w-[768px]">
                 {modelDown ? <OfflineNote onRestore={() => offline.mutate("up")} /> : null}
                 {composer}
-                <p className="py-2.5 text-center text-[12px] text-muted">Harness answers from the sample library. Open the source to check the page.</p>
               </div>
             </div>
           </>
@@ -386,10 +367,10 @@ function AssistantTurn({
               const citation = segment.cite ? citations[segment.cite - 1] : undefined;
               return (
                 <span key={`${message.id}-${index}`}>
-                  {segment.text}
+                  {segment.cite ? <mark className="rounded-sm bg-cite px-0.5 text-cite-ink">{segment.text}</mark> : segment.text}
                   {segment.cite && citation ? (
                     <button
-                      className="relative mx-0.5 inline-flex h-[20px] min-w-[20px] -translate-y-px items-center justify-center rounded-full bg-cite px-1.5 align-middle text-[11px] font-semibold text-cite-ink after:absolute after:-inset-3 hover:brightness-95"
+                      className="relative mx-0.5 inline-flex h-[20px] min-w-[20px] -translate-y-px items-center justify-center rounded-full bg-primary px-1.5 align-middle text-[11px] font-semibold text-primary-ink after:absolute after:-inset-3 hover:bg-primary-hover"
                       type="button"
                       aria-label={`Source ${segment.cite}, ${citation.title}, page ${citation.page}`}
                       onClick={() => onCite(citation)}
@@ -410,17 +391,15 @@ function AssistantTurn({
           </p>
         ))}
       {citations.length ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {citations.map((citation, index) => (
+        <div className="mt-4 flex flex-wrap gap-3">
+          {citations.map((citation) => (
             <button
               key={citation.id}
-              className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-line px-3 text-[13px] text-secondary transition-colors hover:bg-soft hover:text-ink"
+              className="w-[210px] max-w-full text-left"
               type="button"
               onClick={() => onCite(citation)}
             >
-              <span className="grid size-4 place-items-center rounded-full bg-cite text-[10px] font-semibold text-cite-ink">{index + 1}</span>
-              <span className="truncate">{citation.title}</span>
-              <span className="shrink-0 text-muted">p. {citation.page}</span>
+              <FileCard title={citation.title} detail={`Page ${citation.page}`} preview={citation.snippet} />
             </button>
           ))}
         </div>
@@ -506,7 +485,7 @@ function SourceRail({ citation, onClose }: { citation: Citation; onClose: () => 
         <p className="mt-0.5 text-[13px] text-muted">Page {citation.page}</p>
         {citation.note ? <p className="mt-3 text-[14px] leading-6 text-secondary">{citation.note}</p> : null}
         <article className="relative mt-5 min-h-[480px] rounded-lg bg-white px-7 py-8 text-[13px] leading-6 text-[#26251e] shadow-[0_1px_2px_rgb(38_37_30/8%),0_8px_24px_-12px_rgb(38_37_30/25%)] ring-1 ring-black/5">
-          <p className="text-[11px] font-medium text-[#67665f]">Sample page {citation.page}</p>
+          <p className="text-[11px] font-medium text-[#67665f]">Page {citation.page}</p>
           <p className="mt-6 font-medium">{citation.title}</p>
           <div className="mt-4 space-y-2" aria-hidden>
             <div className="h-2 w-full rounded bg-black/[0.06]" />

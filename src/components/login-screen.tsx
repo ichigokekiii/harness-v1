@@ -1,11 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { call } from "@/api/client";
+import { Mark } from "@/components/mark";
 
 const schema = z.object({
   username: z.string().min(1, "Enter a username."),
@@ -14,21 +16,14 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const accounts = [
-  ["faculty", "Demo Teacher", "teacher@sampleacademy.test", "Faculty"],
-  ["admin", "Demo Registrar", "registrar@sampleacademy.test", "Institution admin"],
-  ["superadmin", "Demo Operator", "operator@sampleacademy.test", "Super admin"],
-] as const;
-
 const field =
   "mt-1.5 h-10 w-full rounded-control border border-line bg-panel px-3 text-[15px] transition-colors hover:border-ink/25 focus:border-ink/40 focus-visible:outline-none";
 
 export function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
-  const mock = params.get("google") === "mock";
   const failed = params.get("error") === "google";
-  const [error, setError] = useState<string | null>(failed ? "The account chooser could not finish. Try again or use a password." : null);
+  const [error, setError] = useState<string | null>(failed ? "Google sign-in is not set up on this server." : null);
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { username: "", password: "" } });
 
   async function onSubmit(values: FormValues) {
@@ -42,60 +37,22 @@ export function LoginScreen() {
     }
   }
 
-  async function choose(email: string) {
-    setError(null);
-    try {
-      const result = await call<{ home: string }>("/api/auth/google/mock", { method: "POST", body: { email } });
-      router.push(result.home);
-      router.refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Sign-in failed.");
-    }
-  }
-
   return (
     <main className="flex min-h-dvh flex-col bg-root">
       <header className="flex h-16 shrink-0 items-center px-6">
-        <p className="text-[16px] font-semibold tracking-[-0.01em]">Harness</p>
+        <Mark />
       </header>
       <section className="flex flex-1 items-center justify-center px-5 pb-24">
         <div className="w-full max-w-[400px]" data-mp-def="login-form" data-mp-id="login-form">
           <h1 className="text-[22px] font-medium leading-7 tracking-[-0.02em]">
-            Sign in to Harness
+            Sign in to Tabi
             <span className="block text-muted">Your school library, on this machine.</span>
           </h1>
 
-          {mock ? (
-            <div className="mt-8">
-              <p className="text-[14px] font-medium text-secondary">Choose an account</p>
-              <ul className="mt-2 overflow-hidden rounded-xl border border-line bg-panel">
-                {accounts.map(([username, name, email, role]) => (
-                  <li key={email} className="border-b border-line last:border-b-0">
-                    <button className="flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-soft" type="button" onClick={() => void choose(email)}>
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-[12px] font-semibold text-primary-ink">
-                        {name.split(" ").map((part) => part[0]).join("")}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px]">{name}</span>
-                        <span className="block truncate text-[12px] text-muted">{email}</span>
-                      </span>
-                      <span className="text-[12px] text-muted">{role}</span>
-                      <span className="sr-only">{username}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {error ? <p className="mt-3 text-[14px] text-danger" role="alert">{error}</p> : null}
-              <a className="mt-4 inline-flex text-[14px] text-secondary underline underline-offset-4 hover:text-ink" href="/login">
-                Use a password instead
-              </a>
-            </div>
-          ) : (
-            <>
-              <a
-                className="mt-8 flex h-10 items-center justify-center gap-2.5 rounded-control border border-line bg-panel text-[15px] font-medium transition-colors hover:bg-soft"
-                href="/api/auth/google"
-              >
+          <a
+            className="mt-8 flex h-10 items-center justify-center gap-2.5 rounded-control border border-line bg-panel text-[15px] font-medium transition-colors hover:bg-soft"
+            href="/api/auth/google"
+          >
                 <GoogleMark />
                 Continue with Google
               </a>
@@ -123,30 +80,13 @@ export function LoginScreen() {
                 >
                   {form.formState.isSubmitting ? "Signing in" : "Log in"}
                 </button>
+                <p className="text-[14px] text-secondary">
+                  New here?{" "}
+                  <Link className="font-medium text-ink underline underline-offset-4" href="/register">
+                    Create an account
+                  </Link>
+                </p>
               </form>
-              <div className="mt-8">
-                <p className="text-[13px] text-muted">Sample accounts. The password for each is 123456.</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {accounts.map(([username, , , role]) => (
-                    <button
-                      key={username}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line px-3 text-[13px] text-secondary transition-colors hover:bg-soft hover:text-ink"
-                      type="button"
-                      title={`Fill in ${role}`}
-                      onClick={() => {
-                        form.setValue("username", username, { shouldValidate: false });
-                        form.setValue("password", "123456", { shouldValidate: false });
-                        form.setFocus("password");
-                      }}
-                    >
-                      <span className="font-mono text-[12px] text-ink">{username}</span>
-                      <span className="text-muted">{role}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
         </div>
       </section>
     </main>

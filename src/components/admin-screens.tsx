@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Eye, Flag, Prohibit, TextT, UploadSimple, UserPlus, X } from "@phosphor-icons/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -7,12 +8,17 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { call } from "@/api/client";
+import { Bars } from "@/components/bars";
 import { Panel, Shell, StateMessage } from "@/components/shell";
-import type { AuditEvent, LibraryDocument, PublicAccount, QueueItem, Ticket } from "@/lib/domain";
+import type { AuditEvent, Health, LibraryDocument, PublicAccount, QueueItem, Ticket } from "@/lib/domain";
 
 function Frame({ children }: { children: React.ReactNode }) {
   return <Shell>{children}</Shell>;
 }
+
+const field = "mt-1.5 h-10 w-full rounded-lg border border-line bg-root px-3 text-[14px]";
+const labelClass = "block text-[13px] font-medium text-secondary";
+const quietButton = "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-secondary hover:bg-soft hover:text-ink";
 
 export function QueueScreen() {
   const query = useQuery({ queryKey: ["queue"], queryFn: () => call<{ items: QueueItem[] }>("/api/harness/queue") });
@@ -26,49 +32,70 @@ export function QueueScreen() {
       <Panel
         title="Queue"
         action={
-          <label className="inline-flex min-h-9 cursor-pointer items-center rounded-control bg-primary px-4 text-sm text-primary-ink">
+          <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-medium text-primary-ink">
+            <UploadSimple size={16} />
             Upload document
             <input className="sr-only" aria-label="Upload document" type="file" onChange={(event) => event.target.files?.[0] && upload.mutate(event.target.files[0])} />
           </label>
         }
       >
-        {upload.isError ? <p className="mb-3 text-sm text-danger" role="alert">{upload.error.message}</p> : null}
-        {query.isLoading ? <p role="status">Loading the queue</p> : null}
+        {upload.isError ? <p className="mb-4 text-[14px] text-danger" role="alert">{upload.error.message}</p> : null}
+        {query.isLoading ? <p className="text-[14px] text-muted" role="status">Loading the queue</p> : null}
         {query.isError ? <StateMessage title="Queue unavailable" body="Try again." onRetry={() => void query.refetch()} /> : null}
         {!query.isLoading && items.length === 0 ? <StateMessage title="Queue is clear" body="New scans and faculty shares land here." /> : null}
-        <div className="overflow-x-auto rounded-panel border border-line bg-panel">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="text-xs text-muted">
-              <tr>
-                <th className="px-3 py-3 font-medium">Document</th>
-                <th className="px-3 py-3 font-medium">Confidence</th>
-                <th className="px-3 py-3 font-medium">Handwritten</th>
-                <th className="px-3 py-3 font-medium">Status</th>
-                <th className="px-3 py-3 font-medium">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-t border-line">
-                  <td className="px-3 py-2">
-                    <Link className="inline-flex min-h-9 items-center font-medium" href={`/admin/queue/${item.id}`}>
-                      {item.title}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="mr-2">{item.confidence}%</span>
-                    <span className="inline-block h-1.5 w-16 rounded bg-soft align-middle">
-                      <span className="block h-1.5 rounded bg-primary" style={{ width: `${item.confidence}%` }} />
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">{item.handwritten ? "Handwritten" : "Typed"}</td>
-                  <td className="px-3 py-2">{item.status.replaceAll("_", " ")}</td>
-                  <td className="px-3 py-2">{item.source === "faculty_share" ? "Faculty share" : "Upload"}</td>
+        {items.length > 0 ? (
+          <section className="mb-6 rounded-panel border border-line bg-panel p-5">
+            <h2 className="mb-4 text-[13px] font-medium">Read confidence</h2>
+            <Bars rows={items.map((item) => ({ label: item.title, value: item.confidence, max: 100, suffix: `${item.confidence}%` }))} />
+          </section>
+        ) : null}
+        {items.length > 0 ? (
+          <ul className="divide-y divide-line rounded-panel border border-line bg-panel md:hidden">
+            {items.map((item) => (
+              <li key={item.id} className="px-4 py-3.5">
+                <Link className="text-[14px] font-medium" href={`/admin/queue/${item.id}`}>{item.title}</Link>
+                <p className="mt-1 text-[13px] text-muted">
+                  {item.confidence}% · {item.handwritten ? "Handwritten" : "Typed"} · {item.status.replaceAll("_", " ")}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {items.length > 0 ? (
+          <div className="mt-6 hidden overflow-x-auto rounded-panel border border-line bg-panel md:block">
+            <table className="w-full min-w-[720px] text-left text-[14px]">
+              <thead className="text-[12px] text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Document</th>
+                  <th className="px-4 py-3 font-medium">Confidence</th>
+                  <th className="px-4 py-3 font-medium">Handwritten</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id} className="border-t border-line">
+                    <td className="px-4 py-3.5">
+                      <Link className="font-medium hover:underline" href={`/admin/queue/${item.id}`}>
+                        {item.title}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3.5 tabular-nums">
+                      <span className="mr-2">{item.confidence}%</span>
+                      <span className="inline-block h-1 w-16 rounded-full bg-soft align-middle">
+                        <span className="block h-1 rounded-full bg-ink" style={{ width: `${item.confidence}%` }} />
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">{item.handwritten ? "Handwritten" : "Typed"}</td>
+                    <td className="px-4 py-3.5">{item.status.replaceAll("_", " ")}</td>
+                    <td className="px-4 py-3.5 text-secondary">{item.source === "faculty_share" ? "Faculty share" : "Upload"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </Panel>
     </Frame>
   );
@@ -107,13 +134,13 @@ export function ReviewScreen({ id }: { id: string }) {
   return (
     <Frame>
       <Panel title={item?.title ?? "Review"}>
-        {query.isLoading ? <p role="status">Loading the scan</p> : null}
+        {query.isLoading ? <p className="text-[14px] text-muted" role="status">Loading the scan</p> : null}
         {query.isError ? <StateMessage title="Scan missing" body="It may have moved." /> : null}
         {item ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <article className="min-h-[420px] rounded-panel border border-line bg-panel p-6">
-              <p className="text-xs text-muted">Scan · page {item.page}</p>
-              <div className="mt-6 space-y-3 font-mono text-sm leading-7">
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            <article className="min-h-[480px] rounded-lg bg-white px-7 py-8 text-[14px] leading-7 text-[#26251e] shadow-[0_1px_2px_rgb(38_37_30/8%),0_8px_24px_-12px_rgb(38_37_30/25%)] ring-1 ring-black/5">
+              <p className="text-[12px] text-[#67665f]">Page {item.page}</p>
+              <div className="mt-8 space-y-4">
                 {item.scanLines.map((line) => (
                   <p key={line} className={item.handwritten ? "italic" : ""}>
                     {line}
@@ -121,34 +148,37 @@ export function ReviewScreen({ id }: { id: string }) {
                 ))}
               </div>
             </article>
-            <form className="rounded-panel border border-line bg-panel p-4" onSubmit={(event) => event.preventDefault()}>
-              <label className="block text-sm">
+            <form className="space-y-4 rounded-panel border border-line bg-panel p-5" onSubmit={(event) => event.preventDefault()}>
+              <label className={labelClass}>
                 Editable text
-                <textarea className="mt-1 min-h-40 w-full rounded-control border border-line bg-root px-3 py-2" {...form.register("ocrText")} />
+                <textarea className="mt-1.5 min-h-40 w-full rounded-lg border border-line bg-root px-3 py-2.5 text-[14px] leading-6" {...form.register("ocrText")} />
               </label>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {(["subject", "grade", "type", "department"] as const).map((field) => (
-                  <label key={field} className="block text-sm capitalize">
-                    {field}
-                    <input className="mt-1 min-h-9 w-full rounded-control border border-line bg-root px-3" {...form.register(field)} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(["subject", "grade", "type", "department"] as const).map((name) => (
+                  <label key={name} className={`${labelClass} capitalize`}>
+                    {name}
+                    <input className={field} {...form.register(name)} />
                   </label>
                 ))}
               </div>
-              <label className="mt-3 block text-sm">
+              <label className={labelClass}>
                 Visibility
-                <select className="mt-1 min-h-9 w-full rounded-control border border-line bg-root px-3" {...form.register("visibility")}>
+                <select className={field} {...form.register("visibility")}>
                   <option value="department">Department</option>
                   <option value="institution">Institution</option>
                 </select>
               </label>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink" type="button" onClick={() => review.mutate("approve")}>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-ink" type="button" onClick={() => review.mutate("approve")}>
+                  <Check size={16} />
                   Approve
                 </button>
-                <button className="min-h-9 rounded-control border border-line px-4 text-sm" type="button" onClick={() => review.mutate("needs_transcription")}>
+                <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-4 text-sm" type="button" onClick={() => review.mutate("needs_transcription")}>
+                  <TextT size={16} />
                   Needs transcription
                 </button>
-                <button className="min-h-9 rounded-control bg-danger px-4 text-sm text-danger-ink" type="button" onClick={() => review.mutate("reject")}>
+                <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-danger px-4 text-sm font-medium text-danger-ink" type="button" onClick={() => review.mutate("reject")}>
+                  <X size={16} />
                   Reject
                 </button>
               </div>
@@ -173,26 +203,32 @@ export function DocumentsScreen() {
   return (
     <Frame>
       <Panel title="Documents">
-        {query.isLoading ? <p role="status">Loading documents</p> : null}
-        {docs.length === 0 ? <StateMessage title="No documents" body="Approved scans appear here." /> : null}
-        <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
-          {docs.map((doc) => (
-            <li key={doc.id} className="grid gap-3 px-4 py-4 md:grid-cols-[1fr_auto_auto] md:items-center">
-              <div>
-                <p className="text-sm font-medium">{doc.title}</p>
-                <p className="text-xs text-muted">
-                  {doc.scope} · {doc.visibility} · {doc.status} · v{doc.version}
-                </p>
-              </div>
-              <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => update.mutate({ id: doc.id, visibility: doc.visibility === "institution" ? "department" : "institution" })}>
-                Toggle visibility
-              </button>
-              <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => update.mutate({ id: doc.id, status: "superseded" })}>
-                Supersede
-              </button>
-            </li>
-          ))}
-        </ul>
+        {query.isLoading ? <p className="text-[14px] text-muted" role="status">Loading documents</p> : null}
+        {!query.isLoading && docs.length === 0 ? <StateMessage title="No documents" body="Approved scans appear here." /> : null}
+        {docs.length > 0 ? (
+          <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
+            {docs.map((doc) => (
+              <li key={doc.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3.5">
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-medium">{doc.title}</p>
+                  <p className="mt-0.5 text-[12px] text-muted">
+                    {doc.scope} · {doc.visibility} · {doc.status} · v{doc.version}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button className={quietButton} type="button" onClick={() => update.mutate({ id: doc.id, visibility: doc.visibility === "institution" ? "department" : "institution" })}>
+                    <Eye size={15} />
+                    Toggle visibility
+                  </button>
+                  <button className={quietButton} type="button" onClick={() => update.mutate({ id: doc.id, status: "superseded" })}>
+                    <Flag size={15} />
+                    Supersede
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </Panel>
     </Frame>
   );
@@ -226,36 +262,42 @@ export function PeopleScreen() {
   return (
     <Frame>
       <Panel title="People">
-        <form className="mb-4 grid gap-3 rounded-panel border border-line bg-panel p-4 md:grid-cols-4" onSubmit={form.handleSubmit((values) => invite.mutate(values))}>
-          <label className="text-sm">Name<input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("name")} /></label>
-          <label className="text-sm">Email<input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("email")} /></label>
-          <label className="text-sm">Department<input className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("department")} /></label>
-          <label className="text-sm">
+        <form className="mb-6 grid gap-4 rounded-panel border border-line bg-panel p-5 sm:grid-cols-2" onSubmit={form.handleSubmit((values) => invite.mutate(values))}>
+          <label className={labelClass}>Name<input className={field} {...form.register("name")} /></label>
+          <label className={labelClass}>Email<input className={field} {...form.register("email")} /></label>
+          <label className={labelClass}>Department<input className={field} {...form.register("department")} /></label>
+          <label className={labelClass}>
             Role
-            <select className="mt-1 min-h-9 w-full rounded-control border border-line px-3" {...form.register("role")}>
+            <select className={field} {...form.register("role")}>
               <option value="faculty">Faculty</option>
               <option value="institution_admin">Institution admin</option>
             </select>
           </label>
-          <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink md:col-span-4 md:justify-self-start" type="submit">
+          {form.formState.errors.email ? <p className="text-[13px] text-danger sm:col-span-2">{form.formState.errors.email.message}</p> : null}
+          <button className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] font-medium text-primary-ink sm:col-span-2" type="submit">
+            <UserPlus size={16} />
             Invite
           </button>
-          {form.formState.errors.email ? <p className="text-sm text-danger md:col-span-4">{form.formState.errors.email.message}</p> : null}
         </form>
         <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
           {(query.data?.people ?? []).map((person) => (
-            <li key={person.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">{person.name}</p>
-                <p className="text-xs text-muted">{person.role} · {person.department} · {person.status}</p>
+            <li key={person.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[14px] font-medium">{person.name}</p>
+                <p className="mt-0.5 text-[12px] text-muted">{person.role} · {person.department} · {person.status}</p>
               </div>
-              <button
-                className="min-h-9 rounded-control border border-line px-3 text-sm"
-                type="button"
-                onClick={() => status.mutate({ id: person.id, status: person.status === "active" ? "disabled" : "active" })}
-              >
-                {person.status === "active" ? "Disable" : "Enable"}
-              </button>
+              {person.status === "pending" ? (
+                <p className="text-[13px] text-muted">Waiting for approval</p>
+              ) : (
+                <button
+                  className={quietButton}
+                  type="button"
+                  onClick={() => status.mutate({ id: person.id, status: person.status === "active" ? "disabled" : "active" })}
+                >
+                  {person.status === "active" ? <Prohibit size={16} /> : <Check size={16} />}
+                  {person.status === "active" ? "Disable" : "Enable"}
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -275,25 +317,29 @@ export function TicketsScreen() {
     <Frame>
       <Panel title="Tickets">
         {tickets.length === 0 ? <StateMessage title="No tickets" body="Missing-document reports and retirement requests show up here." /> : null}
-        <ul className="space-y-3">
-          {tickets.map((ticket) => (
-            <li key={ticket.id} className="rounded-panel border border-line bg-panel p-4">
-              <p className="text-sm font-medium">{ticket.title}</p>
-              <p className="mt-1 text-sm text-secondary">{ticket.detail}</p>
-              <p className="mt-1 text-xs text-muted">{ticket.kind.replaceAll("_", " ")} · {ticket.status}</p>
-              {ticket.status === "open" ? (
-                <div className="mt-3 flex gap-2">
-                  <button className="min-h-9 rounded-control bg-primary px-3 text-sm text-primary-ink" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "approve" })}>
-                    Approve
-                  </button>
-                  <button className="min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "dismiss" })}>
-                    Dismiss
-                  </button>
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        {tickets.length > 0 ? (
+          <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
+            {tickets.map((ticket) => (
+              <li key={ticket.id} className="px-4 py-4">
+                <p className="text-[14px] font-medium">{ticket.title}</p>
+                <p className="mt-1 text-[14px] leading-6 text-secondary">{ticket.detail}</p>
+                <p className="mt-1 text-[12px] text-muted">{ticket.kind.replaceAll("_", " ")} · {ticket.status}</p>
+                {ticket.status === "open" ? (
+                  <div className="mt-3 flex gap-2">
+                    <button className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[13px] font-medium text-primary-ink" type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "approve" })}>
+                      <Check size={15} />
+                      Approve
+                    </button>
+                    <button className={quietButton} type="button" onClick={() => resolve.mutate({ id: ticket.id, action: "dismiss" })}>
+                      <X size={15} />
+                      Dismiss
+                    </button>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </Panel>
     </Frame>
   );
@@ -304,32 +350,51 @@ export function ActivityScreen() {
     queryKey: ["activity"],
     queryFn: () => call<{ activity: { asked: { label: string; count: number }[]; opened: { title: string; count: number }[] }; recent: AuditEvent[] }>("/api/harness/activity"),
   });
+  const health = useQuery({ queryKey: ["health"], queryFn: () => call<{ health: Health }>("/api/harness/health") });
   const data = query.data;
   return (
     <Frame>
       <Panel title="Activity">
-        {query.isLoading ? <p role="status">Loading activity</p> : null}
+        {query.isLoading ? <p className="text-[14px] text-muted" role="status">Loading activity</p> : null}
+        {health.data ? (
+          <section className="mb-6 rounded-panel border border-line bg-panel p-5">
+            <h2 className="mb-4 text-[13px] font-medium">Health</h2>
+            <Bars rows={healthRows(health.data.health)} />
+          </section>
+        ) : null}
         {data ? (
-          <div className="grid gap-4 lg:grid-cols-3">
-            <ListCard title="Most asked" rows={data.activity.asked.map((item) => `${item.label} · ${item.count}`)} />
-            <ListCard title="Most opened" rows={data.activity.opened.map((item) => `${item.title} · ${item.count}`)} />
-            <ListCard title="Recent" rows={data.recent.map((item) => `${item.actor} ${item.action}`)} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section className="rounded-panel border border-line bg-panel p-5">
+              <h2 className="mb-4 text-[13px] font-medium">Words people asked</h2>
+              <Bars rows={data.activity.asked.map((item) => ({ label: item.label, value: item.count }))} />
+            </section>
+            <section className="rounded-panel border border-line bg-panel p-5">
+              <h2 className="mb-4 text-[13px] font-medium">Pages opened</h2>
+              <Bars rows={data.activity.opened.map((item) => ({ label: item.title, value: item.count }))} />
+            </section>
           </div>
+        ) : null}
+        {data && data.recent.length > 0 ? (
+          <ul className="mt-6 divide-y divide-line rounded-panel border border-line bg-panel">
+            {data.recent.map((item) => (
+              <li key={item.id} className="px-4 py-3.5 text-[14px] text-secondary">
+                <span className="font-medium text-ink">{item.actor}</span> {item.action}
+              </li>
+            ))}
+          </ul>
         ) : null}
       </Panel>
     </Frame>
   );
 }
 
-function ListCard({ title, rows }: { title: string; rows: string[] }) {
-  return (
-    <section className="rounded-panel border border-line bg-panel p-4">
-      <h2 className="text-sm font-medium">{title}</h2>
-      <ul className="mt-3 space-y-2 text-sm text-secondary">
-        {rows.length === 0 ? <li>Nothing yet</li> : rows.map((row) => <li key={row}>{row}</li>)}
-      </ul>
-    </section>
-  );
+export function healthRows(health: Health) {
+  return (["model", "ocr", "index"] as const).map((key) => ({
+    label: key === "model" ? "Model" : key === "ocr" ? "OCR" : "Index",
+    value: health[key] === "up" ? 100 : 0,
+    max: 100,
+    suffix: health[key] === "up" ? "100%" : "0%",
+  }));
 }
 
 export function AuditScreen({ scope }: { scope: "admin" | "super" }) {
@@ -341,20 +406,22 @@ export function AuditScreen({ scope }: { scope: "admin" | "super" }) {
   return (
     <Frame>
       <Panel title="Audit">
-        <label className="mb-3 block text-sm">
+        <label className={`${labelClass} mb-6 max-w-md`}>
           Filter
-          <input className="mt-1 min-h-9 w-full max-w-md rounded-control border border-line bg-panel px-3" value={q} onChange={(event) => setQ(event.target.value)} />
+          <input className={field} value={q} onChange={(event) => setQ(event.target.value)} />
         </label>
-        {(query.data?.events.length ?? 0) === 0 ? <StateMessage title="No events" body="Try a different filter." /> : null}
-        <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
-          {(query.data?.events ?? []).map((event) => (
-            <li key={event.id} className="px-4 py-3 text-sm">
-              <p className="font-medium">{event.actor} · {event.action}</p>
-              <p className="text-secondary">{event.detail}</p>
-              <p className="text-xs text-muted">{event.institutionId}</p>
-            </li>
-          ))}
-        </ul>
+        {(query.data?.events.length ?? 0) === 0 && !query.isLoading ? <StateMessage title="No events" body="Try a different filter." /> : null}
+        {(query.data?.events.length ?? 0) > 0 ? (
+          <ul className="divide-y divide-line rounded-panel border border-line bg-panel">
+            {query.data?.events.map((event) => (
+              <li key={event.id} className="px-4 py-3.5">
+                <p className="text-[14px] font-medium">{event.actor} · {event.action}</p>
+                <p className="mt-0.5 text-[14px] text-secondary">{event.detail}</p>
+                <p className="mt-1 text-[12px] text-muted">{event.institutionId}</p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </Panel>
     </Frame>
   );

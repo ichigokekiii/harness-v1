@@ -23,7 +23,7 @@ export type Account = {
   role: Role;
   department: string;
   institutionId: string;
-  status: "active" | "disabled";
+  status: "active" | "disabled" | "pending";
 };
 
 export type PublicAccount = Omit<Account, "password">;
@@ -149,6 +149,7 @@ export type ShapeKind = "frame" | "rect" | "text" | "draw" | "comment";
 
 export type Shape = {
   id: string;
+  parentId?: string;
   kind: ShapeKind;
   x: number;
   y: number;
@@ -165,6 +166,7 @@ export type Shape = {
   stroke: string;
   points?: { x: number; y: number }[];
   slide: boolean;
+  image?: string;
 };
 
 export type AgentEntry =
@@ -196,6 +198,8 @@ export type FormDraft = {
   id: string;
   title: string;
   sourceLabel: string;
+  sourceFile?: string;
+  sourcePreview?: string;
   ownerId: string;
   fields: FormField[];
   signature: string | null;

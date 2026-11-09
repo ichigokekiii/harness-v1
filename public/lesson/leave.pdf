@@ -1,0 +1,56 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1018 >>
+stream
+0.6 w 40 40 532 712 re S
+0.8 w 40 700 m 572 700 l S
+BT /F1 20 Tf 1 0 0 1 56 736 Tm (Leave request) Tj ET
+BT /F1 11 Tf 1 0 0 1 56 714 Tm (Sample Academy) Tj ET
+BT /F1 10 Tf 1 0 0 1 56 660 Tm (Employee name) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 640 Tm (Demo Teacher) Tj ET
+0.4 w 56 632 m 540 632 l S
+BT /F1 10 Tf 1 0 0 1 56 588 Tm (Department) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 568 Tm (Science) Tj ET
+0.4 w 56 560 m 540 560 l S
+BT /F1 10 Tf 1 0 0 1 56 516 Tm (Leave start) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 496 Tm ( ) Tj ET
+0.4 w 56 488 m 540 488 l S
+BT /F1 10 Tf 1 0 0 1 56 444 Tm (Leave end) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 424 Tm ( ) Tj ET
+0.4 w 56 416 m 540 416 l S
+BT /F1 10 Tf 1 0 0 1 56 372 Tm (Manager approved) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 352 Tm (Yes          No) Tj ET
+0.4 w 56 344 m 540 344 l S
+BT /F1 10 Tf 1 0 0 1 56 300 Tm (Note) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 280 Tm ( ) Tj ET
+0.4 w 56 272 m 540 272 l S
+BT /F1 10 Tf 1 0 0 1 56 228 Tm (Signature) Tj ET
+BT /F1 12 Tf 1 0 0 1 56 208 Tm ( ) Tj ET
+0.4 w 56 200 m 540 200 l S
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001310 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1382
+%%EOF

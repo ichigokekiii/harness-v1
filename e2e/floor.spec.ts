@@ -10,7 +10,8 @@ test("no request leaves this machine", async ({ page }) => {
   });
   await reset(page);
   await login(page, "faculty");
-  await page.getByRole("button", { name: "Grade 7 ecosystems" }).click();
+  await page.getByLabel("Message").fill("What should Grade 7 study about ecosystems?");
+  await page.getByRole("button", { name: "Send" }).click();
   expect(leaked).toEqual([]);
 });
 

@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test("a citation opens the highlighted page", async ({ page }) => {
   await login(page, "faculty");
-  await page.getByRole("button", { name: "Grade 7 ecosystems" }).click();
+  await page.getByRole("link", { name: "Grade 7 ecosystems" }).click();
   await expect(page).toHaveURL(/thread-ecosystems/);
   await page.getByRole("button", { name: /Source 1/ }).click();
   await expect(page.getByRole("heading", { name: "Sources" })).toBeVisible();
@@ -51,8 +51,8 @@ test("approve updates the queue", async ({ page }) => {
 test("space undo restores a deleted frame", async ({ page }) => {
   await login(page, "faculty");
   await page.goto("/space/board-ecosystems");
-  await expect(page.getByText("Draft-AI, teacher edit required", { exact: true })).toBeVisible();
-  const frame = page.getByRole("button", { name: "Grade 7 Ecosystems", exact: true });
+  await expect(page.getByRole("textbox", { name: "Board title" })).toBeVisible();
+  const frame = page.getByRole("button", { name: "Show, don't tell", exact: true });
   await frame.focus();
   await page.keyboard.press("Delete");
   await expect(frame).toHaveCount(0);
@@ -61,7 +61,7 @@ test("space undo restores a deleted frame", async ({ page }) => {
 });
 
 test("eval csv has 10 rows", async ({ page }) => {
-  await login(page, "faculty");
+  await login(page, "admin");
   const text = await page.evaluate(async () => {
     const response = await fetch("/api/harness/eval/export");
     return response.text();

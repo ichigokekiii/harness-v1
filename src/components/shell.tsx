@@ -19,6 +19,7 @@ import {
   SquaresFour,
   Sun,
   Timer,
+  UserPlus,
   Users,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
@@ -27,12 +28,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { call } from "@/api/client";
+import { Mark } from "@/components/mark";
 import { cn } from "@/lib/cn";
 import type { Role } from "@/lib/domain";
 import { navigation } from "@/lib/rbac";
 
 type Me = { userId: string; role: Role; name: string; username: string };
 type ThreadList = { threads: { id: string; title: string; updatedAt: string; preview: string }[] };
+type BoardList = { boards: { id: string; title: string }[] };
 
 const icons: Record<string, React.ComponentType<{ size?: number; weight?: "regular" | "fill" }>> = {
   Chat: ChatCircle,
@@ -47,6 +50,7 @@ const icons: Record<string, React.ComponentType<{ size?: number; weight?: "regul
   Activity: ChartBar,
   Audit: Pulse,
   Overview: SquaresFour,
+  Accounts: UserPlus,
   Institutions: Users,
   Health: Heartbeat,
 };
@@ -72,6 +76,22 @@ function useThreads(enabled: boolean) {
   });
 }
 
+function useBoards(enabled: boolean) {
+  return useQuery({
+    queryKey: ["boards"],
+    enabled,
+    queryFn: () => call<BoardList>("/api/harness/boards"),
+  });
+}
+
+function inChatPath(pathname: string) {
+  return pathname === "/chat" || pathname.startsWith("/chat/");
+}
+
+function inSpacePath(pathname: string) {
+  return pathname === "/space" || pathname.startsWith("/space/");
+}
+
 function setCollapsed(next: boolean) {
   window.localStorage.setItem("harness-sidebar", next ? "collapsed" : "open");
   window.dispatchEvent(new Event("harness-sidebar"));
@@ -80,6 +100,7 @@ function setCollapsed(next: boolean) {
 export function Shell({ children }: { children: React.ReactNode }) {
   const me = useMe();
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [palette, setPalette] = useState(false);
   const collapsed = useSyncExternalStore(
@@ -113,8 +134,28 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [collapsed, me.data?.role, router]);
 
+  const [contentOn, setContentOn] = useState(true);
+  const fadeTimer = useRef<number | null>(null);
+  function goMode(href: string) {
+    if (href === "/space" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      router.push(href);
+      return;
+    }
+    setContentOn(false);
+    if (fadeTimer.current) window.clearTimeout(fadeTimer.current);
+    fadeTimer.current = window.setTimeout(() => {
+      router.push(href);
+      requestAnimationFrame(() => setContentOn(true));
+    }, 200);
+  }
+
+  useEffect(() => {
+    if (pathname === "/space") setCollapsed(false);
+    else if (pathname.startsWith("/space/")) setCollapsed(true);
+  }, [pathname]);
+
   if (me.isLoading) {
-    return <div className="min-h-dvh bg-root" role="status" aria-label="Loading Harness" />;
+    return <div className="min-h-dvh bg-root" role="status" aria-label="Loading Tabi" />;
   }
   if (me.isError || !me.data) {
     return (
@@ -137,27 +178,29 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-dvh">
         <aside
           className={cn(
-            "sticky top-0 hidden h-dvh shrink-0 border-r border-line bg-sidebar transition-[width] duration-200 ease-out md:block",
+            "sticky top-0 hidden h-dvh shrink-0 border-r border-line bg-sidebar md:block",
+            pathname === "/space" ? "transition-none" : "transition-[width] duration-200 ease-out",
             collapsed ? "w-[52px]" : "w-[260px]",
           )}
           data-mp-def="sidebar"
           data-mp-id="sidebar"
         >
-          <SidebarBody me={me.data} collapsed={collapsed} onSearch={() => setPalette(true)} onSignedOut={() => router.push("/login")} />
+          <SidebarBody me={me.data} collapsed={collapsed} onSearch={() => setPalette(true)} onMode={goMode} onSignedOut={() => router.push("/login")} />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 flex h-12 items-center gap-1 bg-root/90 px-2 backdrop-blur md:hidden">
             <button className="inline-flex size-10 items-center justify-center rounded-lg hover:bg-soft" type="button" aria-label="Open menu" onClick={() => setOpen(true)}>
               <List size={20} />
             </button>
-            <p className="flex-1 text-[15px] font-semibold tracking-[-0.01em]">Harness</p>
+            {me.data.role === "faculty" ? <ModeSwitch edge onMode={goMode} /> : <Mark href={navigation[me.data.role][0]?.href ?? "/"} />}
+            <span className="flex-1" />
             {me.data.role === "faculty" ? (
               <Link className="inline-flex size-10 items-center justify-center rounded-lg hover:bg-soft" href="/chat" aria-label="New chat">
                 <NotePencil size={20} />
               </Link>
             ) : null}
           </header>
-          <div id="content" className="min-w-0 flex-1">
+          <div id="content" className={cn("min-w-0 flex-1 transition-opacity duration-200 ease-out motion-reduce:transition-none", contentOn ? "opacity-100" : "opacity-0")}>
             {children}
           </div>
         </div>
@@ -176,6 +219,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <SidebarBody
               me={me.data}
               collapsed={false}
+              onMode={goMode}
               onSearch={() => {
                 setOpen(false);
                 setPalette(true);
@@ -195,19 +239,23 @@ function SidebarBody({
   me,
   collapsed,
   onSearch,
+  onMode,
   onClose,
   onSignedOut,
 }: {
   me: Me;
   collapsed: boolean;
   onSearch: () => void;
+  onMode: (href: string) => void;
   onClose?: () => void;
   onSignedOut: () => void;
 }) {
   const pathname = usePathname();
   const faculty = me.role === "faculty";
-  const threads = useThreads(faculty);
-  const items = navigation[me.role].filter((item) => !(faculty && item.label === "Chat"));
+  const inSpace = inSpacePath(pathname);
+  const threads = useThreads(faculty && !inSpace);
+  const boards = useBoards(faculty && inSpace);
+  const items = navigation[me.role].filter((item) => !(faculty && (item.label === "Chat" || item.label === "Space")));
   const row = (active: boolean) =>
     cn(
       "group flex h-9 items-center gap-2.5 rounded-lg px-2 text-[14px] transition-colors",
@@ -217,12 +265,8 @@ function SidebarBody({
 
   return (
     <div className="flex h-full flex-col">
-      <div className={cn("flex h-[52px] shrink-0 items-center px-2", collapsed ? "justify-center" : "justify-between")}>
-        {collapsed ? null : (
-          <Link className="rounded-lg px-2 py-1 text-[15px] font-semibold tracking-[-0.01em] hover:bg-soft/70" href={navigation[me.role][0]?.href ?? "/"}>
-            Harness
-          </Link>
-        )}
+      <div className={cn("flex shrink-0 px-2", collapsed ? "flex-col items-center gap-1 py-2" : "h-[52px] items-center justify-between")}>
+        <Mark href={navigation[me.role][0]?.href ?? "/"} compact={collapsed} />
         <button
           className="inline-flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-soft/70 hover:text-ink"
           type="button"
@@ -233,6 +277,8 @@ function SidebarBody({
           <SidebarSimple size={20} />
         </button>
       </div>
+
+      {faculty ? <ModeSwitch collapsed={collapsed} onMode={onMode} /> : null}
 
       <nav className="flex flex-col gap-px px-2" aria-label="Primary">
         {faculty ? (
@@ -262,27 +308,122 @@ function SidebarBody({
       </nav>
 
       <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        {faculty && !collapsed && threads.data?.threads.length ? (
-          <>
-            <h2 className="px-2 pb-1 text-[12px] font-medium text-muted">Chats</h2>
-            <ul className="flex flex-col gap-px">
-              {threads.data.threads.map((thread) => {
-                const active = pathname === `/chat/${thread.id}`;
-                return (
-                  <li key={thread.id}>
-                    <Link className={cn(row(active), "block truncate leading-9")} href={`/chat/${thread.id}`} aria-current={active ? "page" : undefined}>
-                      {thread.title}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
+        {faculty && !collapsed && !inSpace && threads.data?.threads.length ? (
+          <RecentList label="Chats" activePath={pathname} items={threads.data.threads.map((thread) => ({ id: thread.id, title: thread.title, href: `/chat/${thread.id}` }))} />
+        ) : null}
+        {faculty && !collapsed && inSpace && boards.data?.boards.length ? (
+          <RecentList label="Boards" activePath={pathname} items={boards.data.boards.map((board) => ({ id: board.id, title: board.title, href: `/space/${board.id}` }))} />
         ) : null}
       </div>
 
       <AccountRow me={me} collapsed={collapsed} onSignedOut={onSignedOut} />
     </div>
+  );
+}
+
+function ModeSwitch({ collapsed = false, edge = false, onMode }: { collapsed?: boolean; edge?: boolean; onMode: (href: string) => void }) {
+  const pathname = usePathname();
+  const inChat = inChatPath(pathname);
+  const inSpace = inSpacePath(pathname);
+  if (collapsed) {
+    return (
+      <div className="mb-1 flex flex-col items-center gap-0.5" role="navigation" aria-label="Chat or Space">
+        <ModeIcon href="/chat" label="Chat" active={inChat} icon={ChatCircle} onMode={onMode} />
+        <ModeIcon href="/space" label="Space" active={inSpace} icon={SquaresFour} onMode={onMode} />
+      </div>
+    );
+  }
+  return (
+    <nav aria-label="Chat or Space" className={cn("grid grid-cols-2 rounded-full bg-soft p-0.5 dark:bg-black/45 dark:ring-1 dark:ring-white/12", edge ? "w-[168px]" : "mx-2 mb-2")}>
+      <ModeLink href="/chat" label="Chat" active={inChat} icon={ChatCircle} onMode={onMode} />
+      <ModeLink href="/space" label="Space" active={inSpace} icon={SquaresFour} onMode={onMode} />
+    </nav>
+  );
+}
+
+function leaveForMode(event: React.MouseEvent, href: string, active: boolean, onMode: (href: string) => void) {
+  if (active || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  event.preventDefault();
+  onMode(href);
+}
+
+function ModeLink({
+  href,
+  label,
+  active,
+  icon: Icon,
+  onMode,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  icon: React.ComponentType<{ size?: number; weight?: "regular" | "fill" }>;
+  onMode: (href: string) => void;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      onClick={(event) => leaveForMode(event, href, active, onMode)}
+      className={cn(
+        "flex h-8 items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-colors duration-200",
+        active ? "bg-panel text-ink shadow-[0_1px_2px_rgb(0_0_0/8%)] dark:bg-[#3f3d36] dark:shadow-[0_0_0_1px_rgb(255_255_255/14%)]" : "text-secondary hover:text-ink",
+      )}
+    >
+      <Icon size={15} weight={active ? "fill" : "regular"} />
+      {label}
+    </Link>
+  );
+}
+
+function ModeIcon({
+  href,
+  label,
+  active,
+  icon: Icon,
+  onMode,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  icon: React.ComponentType<{ size?: number; weight?: "regular" | "fill" }>;
+  onMode: (href: string) => void;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      title={label}
+      onClick={(event) => leaveForMode(event, href, active, onMode)}
+      className={cn("inline-flex size-9 items-center justify-center rounded-lg", active ? "bg-soft text-ink" : "text-secondary hover:bg-soft/70 hover:text-ink")}
+    >
+      <Icon size={18} weight={active ? "fill" : "regular"} />
+      <span className="sr-only">{label}</span>
+    </Link>
+  );
+}
+
+function RecentList({ label, items, activePath }: { label: string; items: { id: string; title: string; href: string }[]; activePath: string }) {
+  return (
+    <>
+      <h2 className="px-2 pb-1 text-[12px] font-medium text-muted">{label}</h2>
+      <ul className="flex flex-col gap-px">
+        {items.map((item) => {
+          const active = activePath === item.href;
+          return (
+            <li key={item.id}>
+              <Link
+                className={cn("flex h-9 items-center truncate rounded-lg px-2 text-[14px]", active ? "bg-soft text-ink" : "text-ink/85 hover:bg-soft/70")}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+              >
+                {item.title}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
@@ -295,6 +436,7 @@ function AccountRow({ me, collapsed, onSignedOut }: { me: Me; collapsed: boolean
   );
   const dark = ready && resolvedTheme === "dark";
   const [menu, setMenu] = useState(false);
+  const [themeSpin, setThemeSpin] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const initials = me.name
     .split(" ")
@@ -365,9 +507,14 @@ function AccountRow({ me, collapsed, onSignedOut }: { me: Me; collapsed: boolean
         type="button"
         aria-label={themeLabel}
         title={themeLabel}
-        onClick={() => setTheme(dark ? "light" : "dark")}
+        onClick={() => {
+          setThemeSpin(true);
+          setTheme(dark ? "light" : "dark");
+        }}
       >
-        {dark ? <Sun size={18} /> : <Moon size={18} />}
+        <span key={dark ? "sun" : "moon"} className={themeSpin ? "theme-icon inline-flex" : "inline-flex"}>
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
+        </span>
       </button>
     </div>
   );
@@ -401,7 +548,7 @@ function Palette({ role, onClose }: { role: Role; onClose: () => void }) {
           <MagnifyingGlass size={18} className="text-muted" />
           <input
             autoFocus
-            className="h-[52px] w-full bg-transparent text-[15px]"
+            className="h-[52px] w-full bg-transparent text-[15px] focus-visible:outline-none"
             placeholder="Search pages and chats"
             aria-label="Search pages and chats"
             value={query}
@@ -452,8 +599,8 @@ function Palette({ role, onClose }: { role: Role; onClose: () => void }) {
 export function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="mx-auto w-full max-w-[1080px] px-5 pb-12 pt-8 md:px-10 md:pt-12">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[22px] font-semibold tracking-[-0.02em]">{title}</h1>
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[22px] font-normal tracking-[-0.02em] sm:text-[28px]">{title}</h1>
         {action}
       </div>
       {children}

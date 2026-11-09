@@ -5,8 +5,8 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Harness",
-  description: "Local document chat and lesson canvas for Sample Academy.",
+  title: "It's Tabi",
+  description: "Document chat and a lesson canvas for a school library.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

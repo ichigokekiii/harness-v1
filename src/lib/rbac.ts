@@ -10,7 +10,7 @@ const rules: { prefix: string; roles: Role[] }[] = [
   { prefix: "/library", roles: ["faculty"] },
   { prefix: "/space", roles: ["faculty"] },
   { prefix: "/forms", roles: ["faculty"] },
-  { prefix: "/eval", roles: ["faculty"] },
+  { prefix: "/eval", roles: ["institution_admin"] },
   { prefix: "/admin", roles: ["institution_admin"] },
   { prefix: "/super-admin", roles: ["super_admin"] },
   { prefix: "/settings", roles: ["faculty", "institution_admin", "super_admin"] },
@@ -22,7 +22,6 @@ export const navigation: Record<Role, NavItem[]> = {
     { href: "/library", label: "Library" },
     { href: "/space", label: "Space" },
     { href: "/forms", label: "Forms" },
-    { href: "/eval", label: "Eval" },
   ],
   institution_admin: [
     { href: "/admin/queue", label: "Queue" },
@@ -31,9 +30,11 @@ export const navigation: Record<Role, NavItem[]> = {
     { href: "/admin/tickets", label: "Tickets" },
     { href: "/admin/activity", label: "Activity" },
     { href: "/admin/audit", label: "Audit" },
+    { href: "/eval", label: "Eval" },
   ],
   super_admin: [
     { href: "/super-admin", label: "Overview" },
+    { href: "/super-admin/accounts", label: "Accounts" },
     { href: "/super-admin/institutions", label: "Institutions" },
     { href: "/super-admin/audit", label: "Audit" },
     { href: "/super-admin/health", label: "Health" },

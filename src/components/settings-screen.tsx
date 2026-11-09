@@ -1,9 +1,10 @@
 "use client";
 
+import { Key, Moon, Sun } from "@phosphor-icons/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { call } from "@/api/client";
@@ -27,6 +28,7 @@ export function SettingsScreen() {
     mutationFn: (values: z.infer<typeof schema>) => call("/api/harness/settings/password", { method: "POST", body: values }),
   });
   const dark = ready && resolvedTheme === "dark";
+  const [themeSpin, setThemeSpin] = useState(false);
   return (
     <Shell>
       <Panel title="Settings">
@@ -38,7 +40,10 @@ export function SettingsScreen() {
         </section>
         <section className="mt-4 max-w-lg rounded-panel border border-line bg-panel p-4">
           <h2 className="text-sm font-medium">Theme</h2>
-          <button className="mt-3 min-h-9 rounded-control border border-line px-3 text-sm" type="button" onClick={() => setTheme(dark ? "light" : "dark")}>
+          <button className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm" type="button" onClick={() => { setThemeSpin(true); setTheme(dark ? "light" : "dark"); }}>
+            <span key={dark ? "sun" : "moon"} className={themeSpin ? "theme-icon inline-flex" : "inline-flex"}>
+              {dark ? <Sun size={16} /> : <Moon size={16} />}
+            </span>
             {dark ? "Switch to light theme" : "Switch to dark theme"}
           </button>
         </section>
@@ -58,7 +63,8 @@ export function SettingsScreen() {
           {form.formState.errors.next ? <p className="text-sm text-danger">{form.formState.errors.next.message}</p> : null}
           {save.isError ? <p className="text-sm text-danger">{save.error.message}</p> : null}
           {save.isSuccess ? <p className="text-sm" role="status">Password updated.</p> : null}
-          <button className="min-h-9 rounded-control bg-primary px-4 text-sm text-primary-ink" type="submit">
+          <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-ink" type="submit">
+            <Key size={16} />
             Update password
           </button>
         </form>

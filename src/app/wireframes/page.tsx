@@ -2,7 +2,7 @@ const screens = [
   ["Login", "Centered form, sample accounts, Google chooser"],
   ["Chat home", "248px rail, 720px column, docked composer"],
   ["Chat thread", "Cited answer, yellow source number, page rail"],
-  ["Library", "Institution and My folder, upload, share status"],
+  ["Library", "Slides and My folder, upload, share status"],
   ["Space home", "Prompt, recent boards"],
   ["Space canvas", "Agent, library, layers, canvas, inspector, navy tool dock"],
   ["Form", "Scan beside fields and signature"],

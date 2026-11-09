@@ -181,6 +181,9 @@ export async function loginLocal(username: string, password: string) {
   if (!account || account.status === "disabled") {
     return { error: "That username and password did not match.", status: 401 };
   }
+  if (account.status === "pending") {
+    return { error: "A super admin still needs to approve this account.", status: 403 };
+  }
   updateDb((next) => {
     addAudit(next, {
       actor: account.name,
@@ -190,6 +193,45 @@ export async function loginLocal(username: string, password: string) {
     });
   });
   return { account };
+}
+
+const registerSchema = z.object({
+  name: z.string().min(1, "Enter your name."),
+  username: z.string().min(1, "Choose a username."),
+  email: z.string().email("Enter a valid email."),
+  password: z.string().min(6, "Use at least 6 characters."),
+});
+
+export async function registerLocal(input: unknown) {
+  const parsed = registerSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form.", status: 400 };
+  const db = loadDb();
+  const username = parsed.data.username.trim();
+  const email = parsed.data.email.trim().toLowerCase();
+  if (db.users.some((user) => user.username.toLowerCase() === username.toLowerCase() || user.email.toLowerCase() === email)) {
+    return { error: "That username or email is already in use.", status: 409 };
+  }
+  updateDb((next) => {
+    const account: Account = {
+      id: nid("user"),
+      username,
+      password: parsed.data.password,
+      name: parsed.data.name.trim(),
+      email,
+      role: "faculty",
+      department: "General",
+      institutionId: next.institutions[0]?.id ?? "inst-sample",
+      status: "pending",
+    };
+    next.users.push(account);
+    addAudit(next, {
+      actor: account.name,
+      action: "register",
+      detail: `${account.name} asked to join.`,
+      institutionId: account.institutionId,
+    });
+  });
+  return { ok: true as const };
 }
 
 export async function loginFastApi(email: string, password: string) {
@@ -614,7 +656,8 @@ export async function handle(method: string, parts: string[], request: Request) 
       if (!body.success) return fail("Choose a status.", 400);
       updateDb((next) => {
         const person = next.users.find((item) => item.id === parts[1]);
-        if (person) person.status = body.data.status;
+        if (!person || person.status === "pending") return;
+        person.status = body.data.status;
       });
       return json({ ok: true });
     }
@@ -786,7 +829,7 @@ export async function handle(method: string, parts: string[], request: Request) 
   }
 
   if (parts[0] === "eval") {
-    const denied = deny(session, ["faculty"]);
+    const denied = deny(session, ["institution_admin"]);
     if (denied) return denied;
     if (!session) return fail("Sign in again.", 401);
     if (method === "GET" && parts[1] === "export") {
@@ -866,6 +909,34 @@ export async function handle(method: string, parts: string[], request: Request) 
     }
   }
 
+  if (parts[0] === "accounts") {
+    const denied = deny(session, ["super_admin"]);
+    if (denied) return denied;
+    if (!session) return fail("Sign in again.", 401);
+    if (method === "GET") {
+      return json({ accounts: db.users.filter((user) => user.status === "pending").map(publicAccount) });
+    }
+    if (method === "POST" && parts[2] === "approve") {
+      let missing = false;
+      updateDb((next) => {
+        const person = next.users.find((item) => item.id === parts[1] && item.status === "pending");
+        if (!person) {
+          missing = true;
+          return;
+        }
+        person.status = "active";
+        addAudit(next, {
+          actor: session.name,
+          action: "approve",
+          detail: `Approved ${person.name}.`,
+          institutionId: person.institutionId,
+        });
+      });
+      if (missing) return fail("That account is not waiting.", 404);
+      return json({ ok: true });
+    }
+  }
+
   if (method === "GET" && parts[0] === "overview") {
     const denied = deny(session, ["super_admin"]);
     if (denied) return denied;
@@ -878,6 +949,7 @@ export async function handle(method: string, parts: string[], request: Request) 
       },
       institutionDocs: db.documents.filter((doc) => doc.scope === "institution").length,
       personalDocs: db.documents.filter((doc) => doc.scope === "personal").length,
+      waiting: db.users.filter((user) => user.status === "pending").length,
       audit: db.audit.slice(0, 6),
       health: db.health,
     });
