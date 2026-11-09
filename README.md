@@ -11,7 +11,13 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://127.0.0.1:3100/login. Demo accounts use password `123456` (faculty, admin, superadmin).
+Open http://127.0.0.1:3100/login. Demo password for every role is `123456`.
+
+| Username | Role | Lands on |
+|----------|------|----------|
+| `faculty` | Teacher | Chat |
+| `admin` | Institution admin | Admin queue |
+| `superadmin` | Super admin | Super overview |
 
 ## Deploy on Vercel
 
